@@ -1,21 +1,18 @@
 {
   "name": "front-end",
   "version": "1.0.0",
-  "description": "This is final project",
+  "description": "This is front-end for my final project",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "author": "Truong Hoang Hieu",
   "license": "ISC",
   "dependencies": {
-    "bootstrap": "^5.3.3",
-    "install": "^0.13.0",
+    "boostrap": "^2.0.0",
     "next": "^14.2.5",
-    "npm": "^10.8.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }
