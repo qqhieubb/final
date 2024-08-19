@@ -1,31 +1,42 @@
-import { readdirSync} from "fs"
+const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const authRouter = require("./routes/authRoute");
 
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
+dotenv.config();
 
-require("dotenv").config();
+// Connect to database
+connectDB();
 
 const app = express();
 
-// Apply middleware
-app.use(cors());
+// Middleware
 app.use(express.json());
-app.use(morgan("dev"));
-app.use((req,res,next) => {
-    console.log("This is middleware")
-    next()
+app.use(cors());
+
+if (process.env.NODE_ENV === 'development') {
+    app.use(morgan('dev'));
+}
+
+// Routes
+app.use("/api/auth", authRouter);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "Error";
+
+    res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message,
+    });
 });
 
-// Route
-app.get('/', (req, res) => {
-  res.send("Hit the endpoint");
+// Start the server
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
-
-readdirSync("./routes").map((r) => app.use("/api", require(`./routes/${r}`)))
-
-
-// Port
-const port = process.env.PORT || 8000;
-
-app.listen(port, () => console.log(`Server is running on port ${port}`));
