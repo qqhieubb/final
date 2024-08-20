@@ -1,10 +1,12 @@
 import { Card, Flex, Typography, Form, Input, Button, Alert, Spin } from "antd";
 import { Link } from "react-router-dom";
+import useRegister from "../hooks/userRegister"
 
 
 const Register = () => {
+  const {registerUser, error, loading} = useRegister()
   const handleRegister = (values) => {
-    console.log(values);
+    registerUser(values)
   };
 
 
@@ -31,16 +33,16 @@ const Register = () => {
           <Form.Item label="Confirm Password" name="passwordConfirm" rules={[{ required: true, message: 'Please input Re-password!' }]}>
             <Input.Password   size="large" placeholder="Enter confirm password" />
           </Form.Item>
-          {/* {
+          {
             error && <Alert description={error} type="error" showIcon closable className="alert"/>
-          } */}
+          }
 
         <Form.Item>
-          <Button //type={loading ? "" : "primary"} 
+          <Button type={loading ? "" : "primary"} 
           htmlType="submit" size="large" className="btn">
-            {/* {loading ? <Spin /> : "Create Account"} */}
+            {loading ? <Spin /> : "Create Account"}
 
-            Create Account
+            
           </Button>
         </Form.Item>
 

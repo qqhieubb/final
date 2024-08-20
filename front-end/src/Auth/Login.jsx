@@ -1,11 +1,15 @@
 import { Card, Flex, Typography, Form, Input, Button, Alert, Spin } from "antd";
 import { Link } from "react-router-dom";
-    
-const handleLogin = async(values) => {
-  console.log(values);
-};
+import useLogin from "../hooks/useLogin"   
+
 
     const Login = () => {
+      const { loginUser, error, loading } = useLogin()
+      const handleLogin = async(values) => {
+        await loginUser(values);
+        
+      };
+
       return (
         <Card title="Register" className="form-container">
         <Flex gap="large" align="center">
@@ -25,16 +29,16 @@ const handleLogin = async(values) => {
             </Form.Item>
   
             
-            {/* {
+            {
               error && <Alert description={error} type="error" showIcon closable className="alert"/>
-            } */}
+            }
   
           <Form.Item>
             <Button //type={loading ? "" : "primary"} 
             htmlType="submit" size="large" className="btn">
-              {/* {loading ? <Spin /> : "Create Account"} */}
+              {loading ? <Spin /> : "Login"}
   
-             Login
+             
             </Button>
           </Form.Item>
   
