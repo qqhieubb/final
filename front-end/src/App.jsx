@@ -3,11 +3,12 @@ import './App.css';
 import Register from './Auth/Register';
 import Dashboard from './pages/Dashboard';
 import Login from './Auth/Login';
-import Home from './pages/Home'; // Import trang Home
+import Home from './pages/Home';
+import Instructor from './pages/Instructor'; // Import trang Instructor
 import { useAuth } from './contexts/AuthContext';
 
 const App = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth(); // Giả sử bạn có thông tin vai trò của người dùng trong AuthContext
 
   return (
     <Router>
@@ -18,13 +19,19 @@ const App = () => {
         {/* Route cho trang đăng ký */}
         <Route
           path="/register"
-          element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />}
+          element={!isAuthenticated ? <Register /> : <Navigate to={role === 'Instructor' ? '/instructor' : '/dashboard'} />}
         />
 
         {/* Route cho trang đăng nhập */}
         <Route
           path="/login"
-          element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />}
+          element={!isAuthenticated ? <Login /> : <Navigate to={role === 'Instructor' ? '/instructor' : '/dashboard'} />}
+        />
+
+        {/* Route cho Instructor nếu người dùng có vai trò Instructor */}
+        <Route
+          path="/instructor"
+          element={isAuthenticated && role === 'Instructor' ? <Instructor /> : <Navigate to="/" />}
         />
 
         {/* Route cho Dashboard */}

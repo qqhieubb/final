@@ -3,8 +3,8 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const authRouter = require("./routes/authRoute");
-
+const courseRoute = require("./routes/courseRoute");
+const commentRoute = require("./routes/commentRoute");
 dotenv.config();
 
 // Connect to database
@@ -21,8 +21,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Routes
-app.use("/api/auth", authRouter);
-
+app.use("/api/courses", courseRoute);
+app.use("/api/comments", commentRoute);
 // Global Error Handler
 app.use((err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
