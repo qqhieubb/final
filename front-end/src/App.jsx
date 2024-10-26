@@ -1,49 +1,99 @@
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import './App.css';
-import Register from './Auth/Register';
-import Dashboard from './pages/Dashboard';
-import Login from './Auth/Login';
-import Home from './pages/Home';
-import Instructor from './pages/Instructor'; // Import trang Instructor
-import { useAuth } from './contexts/AuthContext';
+import React from "react";
+import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/home/Home";
+import Header from "./components/header/Header";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Verify from "./pages/auth/Verify";
+import Footer from "./components/footer/Footer";
+import About from "./pages/about/About";
+import Account from "./pages/account/Account";
+import { UserData } from "./context/UserContext";
+import Loading from "./components/loading/Loading";
+import Courses from "./pages/courses/Courses";
+import CourseDescription from "./pages/coursedescription/CourseDescription";
+import PaymentSuccess from "./pages/paymentsuccess/PaymentSuccess";
+import Dashbord from "./pages/dashbord/Dashbord";
+import CourseStudy from "./pages/coursestudy/CourseStudy";
+import Lecture from "./pages/lecture/Lecture";
+import AdminDashbord from "./admin/Dashboard/AdminDashbord";
+import AdminCourses from "./admin/Courses/AdminCourses";
+import AdminUsers from "./admin/Users/AdminUsers";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 const App = () => {
-  const { isAuthenticated, role } = useAuth(); // Giả sử bạn có thông tin vai trò của người dùng trong AuthContext
-
+  const { isAuth, user, loading } = UserData();
   return (
-    <Router>
-      <Routes>
-        {/* Route cho Home, luôn hiển thị cho cả người dùng đã đăng nhập hoặc chưa */}
-        <Route path="/" element={<Home />} />
+    <>
+      {loading ? (
+        <Loading />
+      ) : (
+        <BrowserRouter>
+          <Header isAuth={isAuth} />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route
+              path="/account"
+              element={isAuth ? <Account user={user} /> : <Login />}
+            />
+            <Route path="/login" element={isAuth ? <Home /> : <Login />} />
+            <Route
+              path="/register"
+              element={isAuth ? <Home /> : <Register />}
+            />
+            <Route path="/verify" element={isAuth ? <Home /> : <Verify />} />
+            <Route
+              path="/forgot"
+              element={isAuth ? <Home /> : <ForgotPassword />}
+            />
+            <Route
+              path="/reset-password/:token"
+              element={isAuth ? <Home /> : <ResetPassword />}
+            />
+            <Route
+              path="/course/:id"
+              element={isAuth ? <CourseDescription user={user} /> : <Login />}
+            />
+            <Route
+              path="/payment-success/:id"
+              element={isAuth ? <PaymentSuccess user={user} /> : <Login />}
+            />
+            <Route
+              path="/:id/dashboard"
+              element={isAuth ? <Dashbord user={user} /> : <Login />}
+            />
+            <Route
+              path="/course/study/:id"
+              element={isAuth ? <CourseStudy user={user} /> : <Login />}
+            />
 
-        {/* Route cho trang đăng ký */}
-        <Route
-          path="/register"
-          element={!isAuthenticated ? <Register /> : <Navigate to={role === 'Instructor' ? '/instructor' : '/dashboard'} />}
-        />
+            <Route
+              path="/lectures/:id"
+              element={isAuth ? <Lecture user={user} /> : <Login />}
+            />
 
-        {/* Route cho trang đăng nhập */}
-        <Route
-          path="/login"
-          element={!isAuthenticated ? <Login /> : <Navigate to={role === 'Instructor' ? '/instructor' : '/dashboard'} />}
-        />
+            <Route
+              path="/admin/dashboard"
+              element={isAuth ? <AdminDashbord user={user} /> : <Login />}
+            />
 
-        {/* Route cho Instructor nếu người dùng có vai trò Instructor */}
-        <Route
-          path="/instructor"
-          element={isAuthenticated && role === 'Instructor' ? <Instructor /> : <Navigate to="/" />}
-        />
-
-        {/* Route cho Dashboard */}
-        <Route
-          path="/dashboard"
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />}
-        />
-
-        {/* Route mặc định, chuyển hướng về Home nếu route không tồn tại */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+            <Route
+              path="/admin/course"
+              element={isAuth ? <AdminCourses user={user} /> : <Login />}
+            />
+            <Route
+              path="/admin/users"
+              element={isAuth ? <AdminUsers user={user} /> : <Login />}
+            />
+          </Routes>
+          <Footer />
+        </BrowserRouter>
+      )}
+    </>
   );
 };
 

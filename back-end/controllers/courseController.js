@@ -1,83 +1,178 @@
-const Course = require('../models/courseModel');
+//import { instance } from "../index.js";
+import TryCatch from "../middlewares/TryCatch.js";
+import { Courses } from "../models/Courses.js";
+import { Lecture } from "../models/Lecture.js";
+import { User } from "../models/User.js";
+import crypto from "crypto";
+import { Payment } from "../models/Payment.js";
+import { Progress } from "../models/Progress.js";
 
-// Create a new course
-exports.createCourse = async (req, res) => {
-  try {
-    const { title, description, price, category, content } = req.body;
-    const course = new Course({
-      title,
-      description,
-      instructor: req.user._id, // Assuming you use JWT to get user
-      price,
-      category,
-      content,
+export const getAllCourses = TryCatch(async (req, res) => {
+  const courses = await Courses.find();
+  res.json({
+    courses,
+  });
+});
+
+export const getSingleCourse = TryCatch(async (req, res) => {
+  const course = await Courses.findById(req.params.id);
+
+  res.json({
+    course,
+  });
+});
+
+export const fetchLectures = TryCatch(async (req, res) => {
+  const lectures = await Lecture.find({ course: req.params.id });
+
+  const user = await User.findById(req.user._id);
+
+  if (user.role === "admin") {
+    return res.json({ lectures });
+  }
+
+  if (!user.subscription.includes(req.params.id))
+    return res.status(400).json({
+      message: "You have not subscribed to this course",
     });
-    await course.save();
-    res.status(201).json({ success: true, data: course });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+
+  res.json({ lectures });
+});
+
+export const fetchLecture = TryCatch(async (req, res) => {
+  const lecture = await Lecture.findById(req.params.id);
+
+  const user = await User.findById(req.user._id);
+
+  if (user.role === "admin") {
+    return res.json({ lecture });
   }
-};
 
-// Get all courses
-exports.getCourses = async (req, res) => {
-  try {
-    const courses = await Course.find().populate('instructor', 'name');
-    res.status(200).json({ success: true, data: courses });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+  if (!user.subscription.includes(lecture.course))
+    return res.status(400).json({
+      message: "You have not subscribed to this course",
+    });
+
+  res.json({ lecture });
+});
+
+export const getMyCourses = TryCatch(async (req, res) => {
+  const courses = await Courses.find({ _id: req.user.subscription });
+
+  res.json({
+    courses,
+  });
+});
+
+export const checkout = TryCatch(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  const course = await Courses.findById(req.params.id);
+
+  if (user.subscription.includes(course._id)) {
+    return res.status(400).json({
+      message: "You already have this course",
+    });
   }
-};
 
-// Get a single course
-exports.getCourseById = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id).populate('instructor', 'name');
-    if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found' });
-    }
-    res.status(200).json({ success: true, data: course });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+  const options = {
+    amount: Number(course.price * 100),
+    currency: "VND",
+  };
+
+  const order = await instance.orders.create(options);
+
+  res.status(201).json({
+    order,
+    course,
+  });
+});
+
+// export const paymentVerification = TryCatch(async (req, res) => {
+//   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+//     req.body;
+
+//   const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+//   const expectedSignature = crypto
+//     .createHmac("sha256", process.env.RAZORPAY_SECRET)
+//     .update(body)
+//     .digest("hex");
+
+//   const isAuthentic = expectedSignature === razorpay_signature;
+
+//   if (isAuthentic) {
+//     await Payment.create({
+//       razorpay_order_id,
+//       razorpay_payment_id,
+//       razorpay_signature,
+//     });
+
+//     const user = await User.findById(req.user._id);
+
+//     const course = await Courses.findById(req.params.id);
+
+//     user.subscription.push(course._id);
+
+//     await Progress.create({
+//       course: course._id,
+//       completedLectures: [],
+//       user: req.user._id,
+//     });
+
+//     await user.save();
+
+//     res.status(200).json({
+//       message: "Course Purchased Successfully",
+//     });
+//   } else {
+//     return res.status(400).json({
+//       message: "Payment Failed",
+//     });
+//   }
+// });
+
+export const addProgress = TryCatch(async (req, res) => {
+  const progress = await Progress.findOne({
+    user: req.user._id,
+    course: req.query.course,
+  });
+
+  const { lectureId } = req.query;
+
+  if (progress.completedLectures.includes(lectureId)) {
+    return res.json({
+      message: "Progress recorded",
+    });
   }
-};
 
-// Update a course
-exports.updateCourse = async (req, res) => {
-  try {
-    const { title, description, price, category, content } = req.body;
-    const course = await Course.findById(req.params.id);
+  progress.completedLectures.push(lectureId);
 
-    if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found' });
-    }
+  await progress.save();
 
-    // Update course details
-    course.title = title || course.title;
-    course.description = description || course.description;
-    course.price = price || course.price;
-    course.category = category || course.category;
-    course.content = content || course.content;
+  res.status(201).json({
+    message: "new Progress added",
+  });
+});
 
-    await course.save();
-    res.status(200).json({ success: true, data: course });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
-};
+export const getYourProgress = TryCatch(async (req, res) => {
+  const progress = await Progress.find({
+    user: req.user._id,
+    course: req.query.course,
+  });
 
-// Delete a course
-exports.deleteCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
+  if (!progress) return res.status(404).json({ message: "null" });
 
-    if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found' });
-    }
+  const allLectures = (await Lecture.find({ course: req.query.course })).length;
 
-    await course.remove();
-    res.status(200).json({ success: true, message: 'Course deleted' });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
-};
+  const completedLectures = progress[0].completedLectures.length;
+
+  const courseProgressPercentage = (completedLectures * 100) / allLectures;
+
+  res.json({
+    courseProgressPercentage,
+    completedLectures,
+    allLectures,
+    progress,
+  });
+});
