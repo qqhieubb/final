@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import "./users.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { server } from "../../main";
 import Layout from "../Utils/Layout";
 import toast from "react-hot-toast";
+import { Table, Button, Typography, Modal } from "antd";
+
+const { Title } = Typography;
 
 const AdminUsers = ({ user }) => {
   const navigate = useNavigate();
@@ -20,7 +22,6 @@ const AdminUsers = ({ user }) => {
           token: localStorage.getItem("token"),
         },
       });
-
       setUsers(data.users);
     } catch (error) {
       console.log(error);
@@ -32,62 +33,71 @@ const AdminUsers = ({ user }) => {
   }, []);
 
   const updateRole = async (id) => {
-    if (confirm("are you sure you want to update this user role")) {
-      try {
-        const { data } = await axios.put(
-          `${server}/api/user/${id}`,
-          {},
-          {
-            headers: {
-              token: localStorage.getItem("token"),
-            },
-          }
-        );
-
-        toast.success(data.message);
-        fetchUsers();
-      } catch (error) {
-        toast.error(error.response.data.message);
-      }
-    }
+    Modal.confirm({
+      title: "Are you sure you want to update this user's role?",
+      onOk: async () => {
+        try {
+          const { data } = await axios.put(
+            `${server}/api/user/${id}`,
+            {},
+            {
+              headers: {
+                token: localStorage.getItem("token"),
+              },
+            }
+          );
+          toast.success(data.message);
+          fetchUsers();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Error updating role");
+        }
+      },
+    });
   };
 
-  console.log(users);
+  const columns = [
+    {
+      title: "#",
+      dataIndex: "index",
+      key: "index",
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+    },
+    {
+      title: "Update Role",
+      key: "updateRole",
+      render: (_, record) => (
+        <Button type="primary" onClick={() => updateRole(record._id)}>
+          Update Role
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <Layout>
-      <div className="users">
-        <h1>All Users</h1>
-        <table border={"black"}>
-          <thead>
-            <tr>
-              <td>#</td>
-              <td>name</td>
-              <td>email</td>
-              <td>role</td>
-              <td>update role</td>
-            </tr>
-          </thead>
-
-          {users &&
-            users.map((e, i) => (
-              <tbody>
-                <tr>
-                  <td>{i + 1}</td>
-                  <td>{e.name}</td>
-                  <td>{e.email}</td>
-                  <td>{e.role}</td>
-                  <td>
-                    <button
-                      onClick={() => updateRole(e._id)}
-                      className="common-btn"
-                    >
-                      Update Role
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            ))}
-        </table>
+      <div style={{ padding: "20px" }}>
+        <Title level={2}>All Users</Title>
+        <Table
+          dataSource={users.map((user, index) => ({ ...user, key: user._id, index }))}
+          columns={columns}
+          pagination={{ pageSize: 5 }}
+          bordered
+        />
       </div>
     </Layout>
   );

@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import Layout from "../Utils/Layout";
 import { useNavigate } from "react-router-dom";
 import { CourseData } from "../../context/CourseContext";
-import CourseCard from "../../components/coursecard/CourseCard";
-import "./admincourses.css";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { server } from "../../main";
+import { Typography, Form, Input, Button, Select, Upload, Spin, Row, Col, Card, Table } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+
+const { Title } = Typography;
+const { Option } = Select;
 
 const categories = [
   "Web Development",
@@ -14,7 +17,19 @@ const categories = [
   "Game Development",
   "Data Science",
   "Artificial Intelligence",
+  "Marketing",
+  "Business Management",
+  "Graphic Design",
+  "Photography",
+  "Health & Fitness",
+  "Music",
+  "Language Learning",
+  "Personal Development",
+  "Cooking",
+  "Finance & Investment",
+  "Art & Crafts",
 ];
+
 
 const AdminCourses = ({ user }) => {
   const navigate = useNavigate();
@@ -32,7 +47,7 @@ const AdminCourses = ({ user }) => {
   const [btnLoading, setBtnLoading] = useState(false);
 
   const changeImageHandler = (e) => {
-    const file = e.target.files[0];
+    const file = e.file.originFileObj;
     const reader = new FileReader();
 
     reader.readAsDataURL(file);
@@ -45,10 +60,8 @@ const AdminCourses = ({ user }) => {
 
   const { courses, fetchCourses } = CourseData();
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
+  const submitHandler = async () => {
     setBtnLoading(true);
-
     const myForm = new FormData();
 
     myForm.append("title", title);
@@ -79,97 +92,135 @@ const AdminCourses = ({ user }) => {
       setCategory("");
     } catch (error) {
       toast.error(error.response.data.message);
+      setBtnLoading(false);
     }
   };
 
+  const columns = [
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+    },
+    {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+    },
+    {
+      title: "Duration (hrs)",
+      dataIndex: "duration",
+      key: "duration",
+    },
+  ];
+
   return (
     <Layout>
-      <div className="admin-courses">
-        <div className="left">
-          <h1>All Courses</h1>
-          <div className="dashboard-content">
-            {courses && courses.length > 0 ? (
-              courses.map((e) => {
-                return <CourseCard key={e._id} course={e} />;
-              })
-            ) : (
-              <p>No Courses Yet</p>
-            )}
-          </div>
-        </div>
+      <Row gutter={16} style={{ padding: '20px' }}>
+        <Col span={14}>
+          <Title level={2}>All Courses</Title>
+          <Table
+            columns={columns}
+            dataSource={courses}
+            rowKey={(record) => record._id}
+            pagination={{ pageSize: 5 }}
+          />
+        </Col>
 
-        <div className="right">
-          <div className="add-course">
-            <div className="course-form">
-              <h2>Add Course</h2>
-              <form onSubmit={submitHandler}>
-                <label htmlFor="text">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                />
+        <Col span={10}>
+          <Card title="Add Course" bordered={false}>
+            <Form layout="vertical" onFinish={submitHandler}>
+              <Form.Item label="Title" required>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+              </Form.Item>
 
-                <label htmlFor="text">Description</label>
-                <input
-                  type="text"
+              <Form.Item label="Description" required>
+                <Input.TextArea
+                  rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  required
                 />
+              </Form.Item>
 
-                <label htmlFor="text">Price</label>
-                <input
+              <Form.Item label="Price" required>
+                <Input
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  required
                 />
+              </Form.Item>
 
-                <label htmlFor="text">createdBy</label>
-                <input
-                  type="text"
+              <Form.Item label="Created By" required>
+                <Input
                   value={createdBy}
                   onChange={(e) => setCreatedBy(e.target.value)}
-                  required
                 />
+              </Form.Item>
 
-                <select
+              <Form.Item label="Category" required>
+                <Select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(value) => setCategory(value)}
+                  placeholder="Select Category"
                 >
-                  <option value={""}>Select Category</option>
-                  {categories.map((e) => (
-                    <option value={e} key={e}>
-                      {e}
-                    </option>
+                  {categories.map((cat) => (
+                    <Option key={cat} value={cat}>
+                      {cat}
+                    </Option>
                   ))}
-                </select>
+                </Select>
+              </Form.Item>
 
-                <label htmlFor="text">Duration</label>
-                <input
+              <Form.Item label="Duration (in hours)" required>
+                <Input
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  required
                 />
+              </Form.Item>
 
-                <input type="file" required onChange={changeImageHandler} />
-                {imagePrev && <img src={imagePrev} alt="" width={300} />}
-
-                <button
-                  type="submit"
-                  disabled={btnLoading}
-                  className="common-btn"
+              <Form.Item label="Upload Image" required>
+                <Upload
+                  beforeUpload={() => false}
+                  onChange={changeImageHandler}
+                  showUploadList={false}
                 >
-                  {btnLoading ? "Please Wait..." : "Add"}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
+                  <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                </Upload>
+                {imagePrev && (
+                  <img src={imagePrev} alt="Course Preview" style={{ width: '100%', marginTop: '10px' }} />
+                )}
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={btnLoading}
+                  block
+                >
+                  {btnLoading ? <Spin /> : "Add Course"}
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
     </Layout>
   );
 };

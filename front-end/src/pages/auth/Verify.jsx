@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import "./auth.css";
 import { Link, useNavigate } from "react-router-dom";
 import { UserData } from "../../context/UserContext";
 import ReCAPTCHA from "react-google-recaptcha";
+import { Form, Input, Button, Typography, Space, Card } from "antd";
+
+const { Title, Text } = Typography;
 
 const Verify = () => {
   const [otp, setOtp] = useState("");
@@ -15,37 +17,49 @@ const Verify = () => {
     setShow(true);
   }
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
+  const submitHandler = async () => {
     await verifyOtp(Number(otp), navigate);
   };
+
   return (
     <div className="auth-page">
-      <div className="auth-form">
-        <h2>Verify Account</h2>
-        <form onSubmit={submitHandler}>
-          <label htmlFor="otp">Otp</label>
-          <input
-            type="number"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            required
-          />
-          <ReCAPTCHA
-            sitekey=" 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-            onChange={onChange}
-          />
-          ,
-          {show && (
-            <button disabled={btnLoading} type="submit" className="common-btn">
-              {btnLoading ? "Please Wait..." : "Verify"}
-            </button>
-          )}
-        </form>
-        <p>
-          Go to <Link to="/login">Login</Link> page
-        </p>
-      </div>
+      <Space direction="vertical" align="center" style={{ width: "100%", marginTop: 50 }}>
+        <Card bordered style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
+          <Title level={3}>Verify Account</Title>
+          <Form layout="vertical" onFinish={submitHandler}>
+            <Form.Item label="OTP" required>
+              <Input
+                type="number"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter OTP"
+                required
+              />
+            </Form.Item>
+            <Form.Item>
+              <ReCAPTCHA
+                sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                onChange={onChange}
+              />
+            </Form.Item>
+            {show && (
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={btnLoading}
+                  block
+                >
+                  {btnLoading ? "Please Wait..." : "Verify"}
+                </Button>
+              </Form.Item>
+            )}
+          </Form>
+          <Text>
+            Go to <Link to="/login">Login</Link> page
+          </Text>
+        </Card>
+      </Space>
     </div>
   );
 };

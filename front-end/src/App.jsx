@@ -14,10 +14,10 @@ import Loading from "./components/loading/Loading";
 import Courses from "./pages/courses/Courses";
 import CourseDescription from "./pages/coursedescription/CourseDescription";
 import PaymentSuccess from "./pages/paymentsuccess/PaymentSuccess";
-import Dashbord from "./pages/dashbord/Dashbord";
+import Dashboard from "./pages/dashboard/Dashboard";
 import CourseStudy from "./pages/coursestudy/CourseStudy";
 import Lecture from "./pages/lecture/Lecture";
-import AdminDashbord from "./admin/Dashboard/AdminDashbord";
+import AdminDashboard from "./admin/Dashboard/AdminDashboard";
 import AdminCourses from "./admin/Courses/AdminCourses";
 import AdminUsers from "./admin/Users/AdminUsers";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -64,7 +64,7 @@ const App = () => {
             />
             <Route
               path="/:id/dashboard"
-              element={isAuth ? <Dashbord user={user} /> : <Login />}
+              element={isAuth ? <Dashboard user={user} /> : <Login />}
             />
             <Route
               path="/course/study/:id"
@@ -78,7 +78,7 @@ const App = () => {
 
             <Route
               path="/admin/dashboard"
-              element={isAuth ? <AdminDashbord user={user} /> : <Login />}
+              element={isAuth ? <AdminDashboard user={user} /> : <Login />}
             />
 
             <Route

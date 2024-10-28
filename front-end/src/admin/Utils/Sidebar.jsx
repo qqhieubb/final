@@ -1,54 +1,46 @@
 import React from "react";
-import "./common.css";
 import { Link } from "react-router-dom";
 import { AiFillHome, AiOutlineLogout } from "react-icons/ai";
 import { FaBook, FaUserAlt } from "react-icons/fa";
 import { UserData } from "../../context/UserContext";
+import { Layout, Menu } from "antd";
+import { useNavigate } from "react-router-dom";
+const { Sider } = Layout;
 
 const Sidebar = () => {
   const { user } = UserData();
+  const navigate = useNavigate();
+
   return (
-    <div className="sidebar">
-      <ul>
-        <li>
-          <Link to={"/admin/dashboard"}>
-            <div className="icon">
-              <AiFillHome />
-            </div>
-            <span>Home</span>
-          </Link>
-        </li>
-
-        <li>
-          <Link to={"/admin/course"}>
-            <div className="icon">
-              <FaBook />
-            </div>
-            <span>Courses</span>
-          </Link>
-        </li>
-
+    <Sider
+      width={250}
+      style={{ height: "100vh", backgroundColor: "#001529" }}
+    >
+      <div className="logo" style={{ margin: "16px", color: "white", fontSize: "24px", textAlign: "center" }}>
+        Admin Panel
+      </div>
+      <Menu
+        theme="dark"
+        mode="inline"
+        defaultSelectedKeys={["/admin/dashboard"]}
+        onClick={(e) => navigate(e.key)}
+      >
+        <Menu.Item key="/admin/dashboard" icon={<AiFillHome />}>
+          <Link to={"/admin/dashboard"}>Home</Link>
+        </Menu.Item>
+        <Menu.Item key="/admin/course" icon={<FaBook />}>
+          <Link to={"/admin/course"}>Courses</Link>
+        </Menu.Item>
         {user && user.mainrole === "superadmin" && (
-          <li>
-            <Link to={"/admin/users"}>
-              <div className="icon">
-                <FaUserAlt />
-              </div>
-              <span>Users</span>
-            </Link>
-          </li>
+          <Menu.Item key="/admin/users" icon={<FaUserAlt />}>
+            <Link to={"/admin/users"}>Users</Link>
+          </Menu.Item>
         )}
-
-        <li>
-          <Link to={"/account"}>
-            <div className="icon">
-              <AiOutlineLogout />
-            </div>
-            <span>Logout</span>
-          </Link>
-        </li>
-      </ul>
-    </div>
+        <Menu.Item key="/account" icon={<AiOutlineLogout />}>
+          <Link to={"/account"}>Logout of Admin Panel</Link>
+        </Menu.Item>
+      </Menu>
+    </Sider>
   );
 };
 

@@ -1,45 +1,54 @@
 import React, { useState } from "react";
-import "./auth.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { server } from "../../main";
+import { Form, Input, Button, Typography, Spin } from "antd";
+
+const { Title } = Typography;
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setBtnLoading(true);
     try {
       const { data } = await axios.post(`${server}/api/user/forgot`, { email });
-
       toast.success(data.message);
       navigate("/login");
-      setBtnLoading(false);
     } catch (error) {
       toast.error(error.response.data.message);
+    } finally {
       setBtnLoading(false);
     }
   };
+
   return (
-    <div className="auth-page">
-      <div className="auth-form">
-        <h2>Forgot Password</h2>
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="text">Enter Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <button disabled={btnLoading} className="common-btn">
-            {btnLoading ? "Please Wait..." : "Forgot Password"}
-          </button>
-        </form>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+      <div style={{ width: 300, padding: 24, background: "#fff", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+        <Title level={3} style={{ textAlign: "center" }}>Forgot Password</Title>
+        <Form layout="vertical" onFinish={handleSubmit}>
+          <Form.Item label="Enter Email" name="email" rules={[{ required: true, message: 'Please enter your email!' }]}>
+            <Input 
+              type="email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              placeholder="example@example.com" 
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              block 
+              disabled={btnLoading}
+            >
+              {btnLoading ? <Spin size="small" /> : "Forgot Password"}
+            </Button>
+          </Form.Item>
+        </Form>
       </div>
     </div>
   );

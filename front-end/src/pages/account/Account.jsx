@@ -1,14 +1,15 @@
 import React from "react";
 import { MdDashboard } from "react-icons/md";
-import "./account.css";
 import { IoMdLogOut } from "react-icons/io";
+import { Card, Button, Typography, Space } from "antd";
 import { UserData } from "../../context/UserContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
+const { Title, Text } = Typography;
+
 const Account = ({ user }) => {
   const { setIsAuth, setUser } = UserData();
-
   const navigate = useNavigate();
 
   const logoutHandler = () => {
@@ -18,52 +19,50 @@ const Account = ({ user }) => {
     toast.success("Logged Out");
     navigate("/login");
   };
+
   return (
-    <div>
+    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
       {user && (
-        <div className="profile">
-          <h2>My Profile</h2>
-          <div className="profile-info">
-            <p>
-              <strong>Name - {user.name}</strong>
-            </p>
+        <Card
+          title={<Title level={3}>My Profile</Title>}
+          bordered={false}
+          style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+        >
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Text strong>Name: {user.name}</Text>
+            <Text strong>Email: {user.email}</Text>
 
-            <p>
-              <strong>Email - {user.email}</strong>
-            </p>
-
-            <button
+            <Button
+              type="primary"
+              icon={<MdDashboard />}
               onClick={() => navigate(`/${user._id}/dashboard`)}
-              className="common-btn"
+              block
             >
-              <MdDashboard />
               Dashboard
-            </button>
-
-            <br />
+            </Button>
 
             {user.role === "admin" && (
-              <button
+              <Button
+                type="dashed"
+                icon={<MdDashboard />}
                 onClick={() => navigate(`/admin/dashboard`)}
-                className="common-btn"
+                block
               >
-                <MdDashboard />
                 Admin Dashboard
-              </button>
+              </Button>
             )}
 
-            <br />
-
-            <button
+            <Button
+              type="primary"
+              danger
+              icon={<IoMdLogOut />}
               onClick={logoutHandler}
-              className="common-btn"
-              style={{ background: "red" }}
+              block
             >
-              <IoMdLogOut />
               Logout
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Space>
+        </Card>
       )}
     </div>
   );
