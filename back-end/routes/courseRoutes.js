@@ -6,6 +6,10 @@ import {
   fetchLecture,
   getMyCourses,
   checkout,
+  addComment,
+  getComments,
+  deleteComment,
+  updateComment,
   // paymentVerification,
 } from "../controllers/courseController.js";
 import { isAuth } from "../middlewares/authMiddleware.js";
@@ -19,5 +23,12 @@ router.get("/lecture/:id", isAuth, fetchLecture);
 router.get("/mycourse", isAuth, getMyCourses);
 router.post("/course/checkout/:id", isAuth, checkout);
 // router.post("/verification/:id", isAuth, paymentVerification);
+
+
+// Comment Routes
+router.post("/:courseId/comments", isAuth, addComment);
+router.get("/:courseId/comments", getComments);
+router.delete("/comments/:commentId", isAuth, deleteComment);
+router.put("/comments/:commentId", isAuth, updateComment);
 
 export default router;

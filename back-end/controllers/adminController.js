@@ -117,23 +117,23 @@ export const getAllUser = TryCatch(async (req, res) => {
 });
 
 export const updateRole = TryCatch(async (req, res) => {
-  if (req.user.mainrole !== "superadmin")
+  if (req.user.mainrole !== "Admin")
     return res.status(403).json({
-      message: "This endpoint is assign to superadmin",
+      message: "This endpoint is assign to Admin",
     });
   const user = await User.findById(req.params.id);
 
-  if (user.role === "user") {
-    user.role = "admin";
+  if (user.role === "User") {
+    user.role = "Instructor";
     await user.save();
 
     return res.status(200).json({
-      message: "Role updated to admin",
+      message: "Role updated to Instructor",
     });
   }
 
-  if (user.role === "admin") {
-    user.role = "user";
+  if (user.role === "Instructor") {
+    user.role = "User";
     await user.save();
 
     return res.status(200).json({

@@ -40,7 +40,7 @@ const CourseCard = ({ course }) => {
       cover={<img alt="course" src={`${server}/${course.image}`} />}
       actions={[
         isAuth ? (
-          user && user.role !== "admin" ? (
+          user && user.role !== "Instructor" ? (
             user.subscription.includes(course._id) ? (
               <Button type="primary" onClick={() => navigate(`/course/study/${course._id}`)}>
                 Study
@@ -60,7 +60,7 @@ const CourseCard = ({ course }) => {
             Get Started
           </Button>
         ),
-        user && user.role === "admin" && (
+        user && user.role === "Instructor" && (
           <Button danger onClick={() => deleteHandler(course._id)}>
             Delete
           </Button>

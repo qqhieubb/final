@@ -41,14 +41,14 @@ const Account = ({ user }) => {
               Dashboard
             </Button>
 
-            {user.role === "admin" && (
+            {user.role === "Instructor" && (
               <Button
                 type="dashed"
                 icon={<MdDashboard />}
                 onClick={() => navigate(`/admin/dashboard`)}
                 block
               >
-                Admin Dashboard
+                Admin and Instructor Dashboard
               </Button>
             )}
 

@@ -32,7 +32,7 @@ const Lecture = ({ user }) => {
     fetchProgress();
   }, []);
 
-  if (user && user.role !== "admin" && !user.subscription.includes(params.id)) return navigate("/");
+  if (user && user.role !== "Instructor" && !user.subscription.includes(params.id)) return navigate("/");
 
   async function fetchCourseDetails() {
     try {
@@ -175,7 +175,7 @@ const Lecture = ({ user }) => {
             </div>
 
             <div style={{ width: "400px", textAlign: "center" }}>
-              {user?.role === "admin" && (
+              {user?.role === "Instructor" && (
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
@@ -203,7 +203,7 @@ const Lecture = ({ user }) => {
                       progress[0]?.completedLectures.includes(item._id) && (
                         <CheckOutlined style={{ color: "green" }} />
                       ),
-                      user?.role === "admin" && (
+                      user?.role === "Instructor" && (
                         <Button
                           danger
                           icon={<DeleteOutlined />}

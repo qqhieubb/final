@@ -17,7 +17,7 @@ const Sidebar = () => {
       style={{ height: "100vh", backgroundColor: "#001529" }}
     >
       <div className="logo" style={{ margin: "16px", color: "white", fontSize: "24px", textAlign: "center" }}>
-        Admin Panel
+        Admin and Instructor Panel
       </div>
       <Menu
         theme="dark"
@@ -31,13 +31,13 @@ const Sidebar = () => {
         <Menu.Item key="/admin/course" icon={<FaBook />}>
           <Link to={"/admin/course"}>Courses</Link>
         </Menu.Item>
-        {user && user.mainrole === "superadmin" && (
+        {user && user.mainrole === "Admin" && (
           <Menu.Item key="/admin/users" icon={<FaUserAlt />}>
             <Link to={"/admin/users"}>Users</Link>
           </Menu.Item>
         )}
         <Menu.Item key="/account" icon={<AiOutlineLogout />}>
-          <Link to={"/account"}>Logout of Admin Panel</Link>
+          <Link to={"/account"}>Logout of Instructor and Admin Panel</Link>
         </Menu.Item>
       </Menu>
     </Sider>

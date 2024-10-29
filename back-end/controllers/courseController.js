@@ -6,6 +6,8 @@ import { User } from "../models/User.js";
 import crypto from "crypto";
 import { Payment } from "../models/Payment.js";
 import { Progress } from "../models/Progress.js";
+import { Comment } from "../models/Comments.js";
+
 
 export const getAllCourses = TryCatch(async (req, res) => {
   const courses = await Courses.find();
@@ -27,7 +29,7 @@ export const fetchLectures = TryCatch(async (req, res) => {
 
   const user = await User.findById(req.user._id);
 
-  if (user.role === "admin") {
+  if (user.role === "Instructor") {
     return res.json({ lectures });
   }
 
@@ -44,7 +46,7 @@ export const fetchLecture = TryCatch(async (req, res) => {
 
   const user = await User.findById(req.user._id);
 
-  if (user.role === "admin") {
+  if (user.role === "Instructor") {
     return res.json({ lecture });
   }
 
@@ -176,3 +178,88 @@ export const getYourProgress = TryCatch(async (req, res) => {
     progress,
   });
 });
+
+// Add Comment Functionality
+
+export const addComment = TryCatch(async (req, res) => {
+  const { commentText } = req.body;
+  const { courseId } = req.params;
+
+  if (!commentText) {
+    return res.status(400).json({ message: "Comment text is required" });
+  }
+
+  const comment = await Comment.create({
+    userId: req.user._id,
+    courseId,
+    commentText,
+  });
+
+  res.status(201).json({
+    message: "Comment added successfully",
+    comment,
+  });
+});
+
+export const getComments = TryCatch(async (req, res) => {
+  const { courseId } = req.params;
+
+  const comments = await Comment.find({ courseId }).populate("userId", "name");
+
+  res.json({
+    comments,
+  });
+});
+
+export const deleteComment = TryCatch(async (req, res) => {
+  const { commentId } = req.params;
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    return res.status(404).json({
+      message: "Comment not found",
+    });
+  }
+
+  if (comment.userId.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    return res.status(403).json({
+      message: "You are not authorized to delete this comment",
+    });
+  }
+
+  await comment.remove();
+
+  res.json({
+    message: "Comment deleted successfully",
+  });
+});
+
+export const updateComment = TryCatch(async (req, res) => {
+  const { commentId } = req.params;
+  const { commentText } = req.body;
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    return res.status(404).json({
+      message: "Comment not found",
+    });
+  }
+
+  if (comment.userId.toString() !== req.user._id.toString()) {
+    return res.status(403).json({
+      message: "You are not authorized to update this comment",
+    });
+  }
+
+  comment.commentText = commentText;
+
+  await comment.save();
+
+  res.json({
+    message: "Comment updated successfully",
+    comment,
+  });
+});
+

@@ -24,10 +24,35 @@ export const isAuth = async (req, res, next) => {
 
 export const isAdmin = (req, res, next) => {
   try {
-    if (req.user.role !== "admin")
+    if (req.user.role !== "Instructor")
       return res.status(403).json({
-        message: "You are not admin",
+        message: "You are not Instructor",
       });
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+export const isCommentOwner = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({
+        message: "Comment not found",
+      });
+    }
+
+    if (comment.userId.toString() !== req.user._id.toString() && req.user.role !== "Instructor") {
+      return res.status(403).json({
+        message: "You are not authorized to modify this comment",
+      });
+    }
 
     next();
   } catch (error) {

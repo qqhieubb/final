@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { CourseData } from "../../context/CourseContext";
 import { server } from "../../main";
 import { Card, Typography, Button, Space, Divider } from "antd";
+import CommentSection from "../../components/commentsection/CommentSection";
 
 const { Title, Text } = Typography;
 
@@ -11,7 +12,7 @@ const CourseStudy = ({ user }) => {
   const { fetchCourse, course } = CourseData();
   const navigate = useNavigate();
 
-  if (user && user.role !== "admin" && !user.subscription.includes(params.id)) {
+  if (user && user.role !== "Instructor" && !user.subscription.includes(params.id)) {
     navigate("/");
     return null;
   }
@@ -48,6 +49,8 @@ const CourseStudy = ({ user }) => {
               </Link>
             </Space>
           </Card>
+          <Divider />
+          <CommentSection courseId={params.id} />
         </div>
       )}
     </>

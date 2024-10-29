@@ -17,11 +17,11 @@ const schema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: "user",
+      default: "User",
     },
     mainrole: {
       type: String,
-      default: "user",
+      default: "User",
     },
     subscription: [
       {
