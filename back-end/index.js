@@ -1,15 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectDb } from "./config/db.js";
-import Razorpay from "razorpay";
+
 import cors from "cors";
 
 dotenv.config();
 
-// export const instance = new Razorpay({
-//   key_id: process.env.RAZORPAY_KEY,
-//   key_secret: process.env.RAZORPAY_SECRET,
-// });
+
 
 const app = express();
 

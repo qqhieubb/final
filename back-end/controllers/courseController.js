@@ -135,42 +135,77 @@ export const checkout = TryCatch(async (req, res) => {
 // });
 
 export const addProgress = TryCatch(async (req, res) => {
+  const { lectureId, course } = req.query;
+
+  // Kiểm tra các tham số
+  if (!lectureId || !course) {
+    return res.status(400).json({ message: "Missing lectureId or course parameter" });
+  }
+
+  console.log("User ID:", req.user._id);
+  console.log("Course ID:", course);
+  console.log("Lecture ID:", lectureId);
+
+  // Tìm kiếm tiến độ của người dùng cho khóa học
+  let progress = await Progress.findOne({
+    user: req.user._id,
+    course: course,
+  });
+
+  // Nếu không tìm thấy tiến độ, tạo mới
+  if (!progress) {
+    progress = new Progress({
+      user: req.user._id,
+      course: course,
+      completedLectures: [],
+    });
+  }
+
+  // Kiểm tra xem lecture đã được hoàn thành chưa
+  if (progress.completedLectures.includes(lectureId)) {
+    return res.json({
+      message: "Progress already recorded",
+    });
+  }
+
+  // Thêm lectureId vào danh sách hoàn thành và lưu tiến độ
+  progress.completedLectures.push(lectureId);
+  await progress.save();
+
+  res.status(201).json({
+    message: "New progress added",
+  });
+});
+
+
+
+export const getYourProgress = TryCatch(async (req, res) => {
+  // Tìm kiếm tiến độ của người dùng cho khóa học cụ thể
   const progress = await Progress.findOne({
     user: req.user._id,
     course: req.query.course,
   });
 
-  const { lectureId } = req.query;
+  // Nếu không tìm thấy tiến độ, trả về thông báo lỗi
+  if (!progress) return res.status(404).json({ message: "Progress not found" });
 
-  if (progress.completedLectures.includes(lectureId)) {
-    return res.json({
-      message: "Progress recorded",
+  // Lấy số lượng bài giảng cho khóa học
+  const allLectures = await Lecture.countDocuments({ course: req.query.course });
+
+  // Kiểm tra xem allLectures có bằng 0 không để tránh phép chia cho 0
+  if (allLectures === 0) {
+    return res.status(404).json({
+      message: "No lectures found for this course",
     });
   }
 
-  progress.completedLectures.push(lectureId);
+  // Tính số bài giảng đã hoàn thành
+  const completedLectures = progress.completedLectures.length;
 
-  await progress.save();
-
-  res.status(201).json({
-    message: "new Progress added",
-  });
-});
-
-export const getYourProgress = TryCatch(async (req, res) => {
-  const progress = await Progress.find({
-    user: req.user._id,
-    course: req.query.course,
-  });
-
-  if (!progress) return res.status(404).json({ message: "null" });
-
-  const allLectures = (await Lecture.find({ course: req.query.course })).length;
-
-  const completedLectures = progress[0].completedLectures.length;
-
+  // Tính phần trăm tiến độ khóa học
   const courseProgressPercentage = (completedLectures * 100) / allLectures;
 
+  // Trả về thông tin tiến độ
   res.json({
     courseProgressPercentage,
     completedLectures,
@@ -178,6 +213,7 @@ export const getYourProgress = TryCatch(async (req, res) => {
     progress,
   });
 });
+
 
 // Add Comment Functionality
 

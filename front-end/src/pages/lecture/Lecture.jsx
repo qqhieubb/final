@@ -27,12 +27,16 @@ const Lecture = ({ user }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (user && user.role !== "Instructor" && !user.subscription.includes(params.id)) {
+      navigate("/");
+    }
+  }, [user, params.id, navigate]);
+
+  useEffect(() => {
     fetchCourseDetails();
     fetchLectures();
     fetchProgress();
   }, []);
-
-  if (user && user.role !== "Instructor" && !user.subscription.includes(params.id)) return navigate("/");
 
   async function fetchCourseDetails() {
     try {
@@ -42,6 +46,7 @@ const Lecture = ({ user }) => {
       setCourseName(data.course.title);
     } catch (error) {
       console.log(error);
+      message.error("Failed to fetch course details");
     }
   }
 
@@ -54,15 +59,22 @@ const Lecture = ({ user }) => {
       setLoading(false);
     } catch (error) {
       console.log(error);
+      message.error("Failed to fetch lectures");
       setLoading(false);
     }
   }
 
   async function fetchProgress() {
     try {
-      const { data } = await axios.get(`${server}/api/user/progress?course=${params.id}`, {
-        headers: { token: localStorage.getItem("token") },
-      });
+      const { data } = await axios.get(
+        `${server}/api/user/progress?course=${params.id}`,
+        {
+          headers: {
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+
       setCompleted(data.courseProgressPercentage);
       setCompletedLec(data.completedLectures);
       setLectLength(data.allLectures);
@@ -71,6 +83,25 @@ const Lecture = ({ user }) => {
       console.log(error);
     }
   }
+
+  const addProgress = async (id) => {
+    try {
+      const { data } = await axios.post(
+        `${server}/api/user/progress?course=${params.id}&lectureId=${id}`,
+        {},
+        {
+          headers: {
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+      message.success(data.message);
+      fetchProgress();
+    } catch (error) {
+      console.log(error);
+      message.error("Failed to update progress");
+    }
+  };
 
   async function fetchLecture(id) {
     setLecLoading(true);
@@ -82,42 +113,55 @@ const Lecture = ({ user }) => {
       setLecLoading(false);
     } catch (error) {
       console.log(error);
+      message.error("Failed to fetch lecture details");
       setLecLoading(false);
     }
   }
 
   const changeVideoHandler = (e) => {
-    const file = e.file.originFileObj;
+    const file = e.target.files[0];
+    if (!file) return;
     setVideo(file);
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onloadend = () => setVideoPrev(reader.result);
   };
+  
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setVideo("");
+    setVideoPrev("");
+    setShow(false);
+  };
 
   const submitHandler = async () => {
+    if (!video) {
+      message.error("Please select a video before submitting");
+      return;
+    }
+  
     setBtnLoading(true);
     const myForm = new FormData();
     myForm.append("title", title);
     myForm.append("description", description);
     myForm.append("file", video);
-
+  
     try {
       const { data } = await axios.post(`${server}/api/course/${params.id}`, myForm, {
         headers: { token: localStorage.getItem("token") },
       });
       message.success(data.message);
       setBtnLoading(false);
-      setShow(false);
+      resetForm();
       fetchLectures();
-      setTitle("");
-      setDescription("");
-      setVideo("");
-      setVideoPrev("");
     } catch (error) {
-      message.error(error.response.data.message);
+      message.error(error.response?.data?.message || "Failed to add lecture");
       setBtnLoading(false);
     }
   };
+  
 
   const deleteHandler = async (id) => {
     Modal.confirm({
@@ -131,7 +175,7 @@ const Lecture = ({ user }) => {
           message.success(data.message);
           fetchLectures();
         } catch (error) {
-          message.error(error.response.data.message);
+          message.error(error.response?.data?.message || "Failed to delete lecture");
         }
       },
     });
@@ -200,7 +244,7 @@ const Lecture = ({ user }) => {
                       borderRadius: "5px",
                     }}
                     actions={[
-                      progress[0]?.completedLectures.includes(item._id) && (
+                      progress[0]?.completedLectures?.includes(item._id) && (
                         <CheckOutlined style={{ color: "green" }} />
                       ),
                       user?.role === "Instructor" && (
@@ -225,7 +269,7 @@ const Lecture = ({ user }) => {
           <Modal
             title="Add New Lecture"
             visible={show}
-            onCancel={() => setShow(false)}
+            onCancel={resetForm}
             footer={null}
           >
             <Input
@@ -240,9 +284,8 @@ const Lecture = ({ user }) => {
               onChange={(e) => setDescription(e.target.value)}
               style={{ marginBottom: "10px" }}
             />
-            <Upload beforeUpload={() => false} onChange={changeVideoHandler} showUploadList={false}>
-              <Button icon={<UploadOutlined />}>Select Video</Button>
-            </Upload>
+            <input type="file" onChange={changeVideoHandler} style={{ marginBottom: "10px" }} />
+
             {videoPrev && (
               <video src={videoPrev} controls style={{ marginTop: "10px", width: "100%" }} />
             )}

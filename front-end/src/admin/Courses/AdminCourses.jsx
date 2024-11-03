@@ -1,15 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../Utils/Layout";
 import { useNavigate } from "react-router-dom";
 import { CourseData } from "../../context/CourseContext";
+import "./admincourses.css";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { server } from "../../main";
-import { Typography, Form, Input, Button, Select, Upload, Spin, Row, Col, Card, Table } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
-
-const { Title } = Typography;
-const { Option } = Select;
+import { Pagination, Button } from "antd";
 
 const categories = [
   "Web Development",
@@ -17,19 +14,7 @@ const categories = [
   "Game Development",
   "Data Science",
   "Artificial Intelligence",
-  "Marketing",
-  "Business Management",
-  "Graphic Design",
-  "Photography",
-  "Health & Fitness",
-  "Music",
-  "Language Learning",
-  "Personal Development",
-  "Cooking",
-  "Finance & Investment",
-  "Art & Crafts",
 ];
-
 
 const AdminCourses = ({ user }) => {
   const navigate = useNavigate();
@@ -45,9 +30,17 @@ const AdminCourses = ({ user }) => {
   const [image, setImage] = useState("");
   const [imagePrev, setImagePrev] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(5); // số lượng khóa học mỗi trang
+
+  const { courses, fetchCourses } = CourseData();
+
+  useEffect(() => {
+    fetchCourses(); // Lấy danh sách khóa học khi component được mount
+  }, []);
 
   const changeImageHandler = (e) => {
-    const file = e.file.originFileObj;
+    const file = e.target.files[0];
     const reader = new FileReader();
 
     reader.readAsDataURL(file);
@@ -58,10 +51,10 @@ const AdminCourses = ({ user }) => {
     };
   };
 
-  const { courses, fetchCourses } = CourseData();
-
-  const submitHandler = async () => {
+  const submitHandler = async (e) => {
+    e.preventDefault();
     setBtnLoading(true);
+
     const myForm = new FormData();
 
     myForm.append("title", title);
@@ -96,131 +89,165 @@ const AdminCourses = ({ user }) => {
     }
   };
 
-  const columns = [
-    {
-      title: "Title",
-      dataIndex: "title",
-      key: "title",
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Category",
-      dataIndex: "category",
-      key: "category",
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-    },
-    {
-      title: "Created By",
-      dataIndex: "createdBy",
-      key: "createdBy",
-    },
-    {
-      title: "Duration (hrs)",
-      dataIndex: "duration",
-      key: "duration",
-    },
-  ];
+  const deleteHandler = async (courseId) => {
+    try {
+      await axios.delete(`${server}/api/course/${courseId}`, {
+        headers: {
+          token: localStorage.getItem("token"),
+        },
+      });
+      toast.success("Course deleted successfully");
+      await fetchCourses();
+    } catch (error) {
+      toast.error("Failed to delete the course");
+    }
+  };
+
+  // Lấy danh sách khóa học cho trang hiện tại
+  const currentCourses = courses.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const onPageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
     <Layout>
-      <Row gutter={16} style={{ padding: '20px' }}>
-        <Col span={14}>
-          <Title level={2}>All Courses</Title>
-          <Table
-            columns={columns}
-            dataSource={courses}
-            rowKey={(record) => record._id}
-            pagination={{ pageSize: 5 }}
-          />
-        </Col>
+      <div className="admin-courses">
+        <div className="left">
+          <h1>All Courses</h1>
+          <div className="dashboard-content">
+            {courses && courses.length > 0 ? (
+              <>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Category</th>
+                      <th>Price</th>
+                      <th>Duration</th>
+                      <th>Created By</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentCourses.map((course) => (
+                      <tr key={course._id}>
+                        <td>{course.title}</td>
+                        <td>{course.category}</td>
+                        <td>${course.price}</td>
+                        <td>{course.duration} hours</td>
+                        <td>{course.createdBy}</td>
+                        <td>
+                          {user && user.role === "Instructor" && (
+                            <Button
+                              danger
+                              onClick={() => deleteHandler(course._id)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={courses.length}
+                  onChange={onPageChange}
+                  style={{ marginTop: "16px", textAlign: "center" }}
+                />
+              </>
+            ) : (
+              <p>No Courses Yet</p>
+            )}
+          </div>
+        </div>
 
-        <Col span={10}>
-          <Card title="Add Course" bordered={false}>
-            <Form layout="vertical" onFinish={submitHandler}>
-              <Form.Item label="Title" required>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-              </Form.Item>
+        <div className="right">
+          <div className="add-course">
+            <div className="course-form">
+              <h2>Add Course</h2>
+              <form onSubmit={submitHandler}>
+                <label htmlFor="title">Title</label>
+                <input
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
 
-              <Form.Item label="Description" required>
-                <Input.TextArea
-                  rows={4}
+                <label htmlFor="description">Description</label>
+                <input
+                  type="text"
+                  id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  required
                 />
-              </Form.Item>
 
-              <Form.Item label="Price" required>
-                <Input
+                <label htmlFor="price">Price</label>
+                <input
                   type="number"
+                  id="price"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
+                  required
                 />
-              </Form.Item>
 
-              <Form.Item label="Created By" required>
-                <Input
+                <label htmlFor="createdBy">Created By</label>
+                <input
+                  type="text"
+                  id="createdBy"
                   value={createdBy}
                   onChange={(e) => setCreatedBy(e.target.value)}
+                  required
                 />
-              </Form.Item>
 
-              <Form.Item label="Category" required>
-                <Select
+                <label htmlFor="category">Category</label>
+                <select
+                  id="category"
                   value={category}
-                  onChange={(value) => setCategory(value)}
-                  placeholder="Select Category"
+                  onChange={(e) => setCategory(e.target.value)}
                 >
-                  {categories.map((cat) => (
-                    <Option key={cat} value={cat}>
-                      {cat}
-                    </Option>
+                  <option value="">Select Category</option>
+                  {categories.map((e) => (
+                    <option value={e} key={e}>
+                      {e}
+                    </option>
                   ))}
-                </Select>
-              </Form.Item>
+                </select>
 
-              <Form.Item label="Duration (in hours)" required>
-                <Input
+                <label htmlFor="duration">Duration</label>
+                <input
                   type="number"
+                  id="duration"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
+                  required
                 />
-              </Form.Item>
 
-              <Form.Item label="Upload Image" required>
-                <Upload
-                  beforeUpload={() => false}
-                  onChange={changeImageHandler}
-                  showUploadList={false}
-                >
-                  <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                </Upload>
-                {imagePrev && (
-                  <img src={imagePrev} alt="Course Preview" style={{ width: '100%', marginTop: '10px' }} />
-                )}
-              </Form.Item>
+                <label htmlFor="image">Image</label>
+                <input type="file" id="image" required onChange={changeImageHandler} />
+                {imagePrev && <img src={imagePrev} alt="Preview" width={300} />}
 
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={btnLoading}
-                  block
+                <button
+                  type="submit"
+                  disabled={btnLoading}
+                  className="common-btn"
                 >
-                  {btnLoading ? <Spin /> : "Add Course"}
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
-      </Row>
+                  {btnLoading ? "Please Wait..." : "Add"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </Layout>
   );
 };
