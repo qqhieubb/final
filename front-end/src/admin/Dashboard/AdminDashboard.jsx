@@ -10,7 +10,7 @@ const { Title } = Typography;
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
 
-  if (user && user.role !== "Instructor" && user.role !== "Admin") return navigate("/");
+  if (user  && user.mainrole !== "Admin" && user.role !== "Instructor") return navigate("/");
 
 
   const [stats, setStats] = useState([]);

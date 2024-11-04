@@ -22,9 +22,15 @@ import AdminCourses from "./admin/Courses/AdminCourses";
 import AdminUsers from "./admin/Users/AdminUsers";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import CategoryManagement from "./admin/Category/CategoryManagement";
 
 const App = () => {
   const { isAuth, user, loading } = UserData();
+
+  // Kiểm tra xem người dùng có phải là Admin hoặc Instructor hay không
+  const isAdmin = user && user.mainrole === "Admin";
+  const isInstructor = user && user.role === "Instructor";
+
   return (
     <>
       {loading ? (
@@ -70,25 +76,46 @@ const App = () => {
               path="/course/study/:id"
               element={isAuth ? <CourseStudy user={user} /> : <Login />}
             />
-
             <Route
               path="/lectures/:id"
               element={isAuth ? <Lecture user={user} /> : <Login />}
             />
 
-            <Route
-              path="/admin/dashboard"
-              element={isAuth ? <AdminDashboard user={user} /> : <Login />}
-            />
+            {/* Các route chỉ dành cho Admin */}
+            {isAdmin && (
+              <>
+                <Route
+                  path="/admin/dashboard"
+                  element={<AdminDashboard user={user} />}
+                />
+                <Route
+                  path="/admin/course"
+                  element={<AdminCourses user={user} />}
+                />
+                <Route
+                  path="/admin/users"
+                  element={<AdminUsers user={user} />}
+                />
+                <Route
+                  path="/admin/categories"
+                  element={<CategoryManagement />}
+                />
+              </>
+            )}
 
-            <Route
-              path="/admin/course"
-              element={isAuth ? <AdminCourses user={user} /> : <Login />}
-            />
-            <Route
-              path="/admin/users"
-              element={isAuth ? <AdminUsers user={user} /> : <Login />}
-            />
+            {/* Route dành cho Instructor, có quyền truy cập vào AdminDashboard và AdminCourses */}
+            {isInstructor && (
+              <>
+                <Route
+                  path="/admin/dashboard"
+                  element={<AdminDashboard user={user} />}
+                />
+                <Route
+                  path="/admin/course"
+                  element={<AdminCourses user={user} />}
+                />
+              </>
+            )}
           </Routes>
           <Footer />
         </BrowserRouter>

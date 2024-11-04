@@ -8,14 +8,6 @@ import axios from "axios";
 import { server } from "../../main";
 import { Pagination, Button } from "antd";
 
-const categories = [
-  "Web Development",
-  "App Development",
-  "Game Development",
-  "Data Science",
-  "Artificial Intelligence",
-];
-
 const AdminCourses = ({ user }) => {
   const navigate = useNavigate();
 
@@ -31,12 +23,28 @@ const AdminCourses = ({ user }) => {
   const [imagePrev, setImagePrev] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(5); // số lượng khóa học mỗi trang
+  const [pageSize] = useState(5);
+  const [categories, setCategories] = useState([]); // State để lưu danh sách Category từ API
 
   const { courses, fetchCourses } = CourseData();
 
+  // Lấy danh sách khóa học khi component được mount
   useEffect(() => {
-    fetchCourses(); // Lấy danh sách khóa học khi component được mount
+    fetchCourses();
+  }, []);
+
+  // Lấy danh sách Category từ API khi component được mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await axios.get(`${server}/api/categories`);
+        setCategories(data.categories);
+      } catch (error) {
+        toast.error("Failed to load categories");
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const changeImageHandler = (e) => {
@@ -214,11 +222,12 @@ const AdminCourses = ({ user }) => {
                   id="category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
+                  required
                 >
                   <option value="">Select Category</option>
-                  {categories.map((e) => (
-                    <option value={e} key={e}>
-                      {e}
+                  {categories.map((cat) => (
+                    <option value={cat.name} key={cat._id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>

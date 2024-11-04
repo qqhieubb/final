@@ -1,14 +1,16 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 
+// Middleware xác thực người dùng đã đăng nhập
 export const isAuth = async (req, res, next) => {
   try {
     const token = req.headers.token;
 
-    if (!token)
+    if (!token) {
       return res.status(403).json({
         message: "Please Login",
       });
+    }
 
     const decodedData = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -22,12 +24,14 @@ export const isAuth = async (req, res, next) => {
   }
 };
 
+// Middleware kiểm tra quyền Admin
 export const isAdmin = (req, res, next) => {
   try {
-    if (req.user.role !== "Instructor")
+    if (req.user.mainrole !== "Admin") {
       return res.status(403).json({
-        message: "You are not Instructor",
+        message: "Access denied. Admins only.",
       });
+    }
 
     next();
   } catch (error) {
@@ -37,6 +41,24 @@ export const isAdmin = (req, res, next) => {
   }
 };
 
+// Middleware kiểm tra quyền Instructor
+export const isInstructor = (req, res, next) => {
+  try {
+    if (req.user.role !== "Instructor") {
+      return res.status(403).json({
+        message: "Access denied. Instructors only.",
+      });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// Middleware kiểm tra quyền sở hữu comment
 export const isCommentOwner = async (req, res, next) => {
   try {
     const { commentId } = req.params;
