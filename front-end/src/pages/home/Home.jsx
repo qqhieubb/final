@@ -1,14 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Col, Row, Typography, Statistic, Space } from "antd";
+import { Button, Card, Col, Row, Typography, Statistic, Space, Spin } from "antd";
 import { TeamOutlined, BookOutlined, RiseOutlined } from "@ant-design/icons";
-
+import axios from "axios";
+import { server } from "../../main"; // Đảm bảo đường dẫn chính xác
 import Testimonials from "../../components/testimonials/Testimonials";
 
 const { Title, Paragraph } = Typography;
 
 const Home = () => {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await axios.get(`${server}/api/categories`);
+        setCategories(data.categories);
+      } catch (error) {
+        console.error("Failed to load categories", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Điều hướng đến trang Courses với query parameter
+  const handleCategoryClick = (categoryName) => {
+    navigate(`/courses?category=${encodeURIComponent(categoryName.toLowerCase())}`);
+  };
 
   return (
     <div style={{ padding: "20px" }}>
@@ -56,15 +79,24 @@ const Home = () => {
       {/* Categories Section */}
       <div style={{ padding: "50px 0" }}>
         <Title level={2} style={{ textAlign: "center" }}>Explore Our Categories</Title>
-        <Row gutter={[16, 16]} style={{ marginTop: "30px" }}>
-          {["Technology", "Business", "Design", "Language", "Science"].map((category) => (
-            <Col xs={24} sm={12} md={8} lg={4} key={category}>
-              <Card hoverable onClick={() => navigate(`/courses/${category.toLowerCase()}`)}>
-                <Title level={4}>{category}</Title>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        {loading ? (
+          <div style={{ textAlign: "center", marginTop: "30px" }}>
+            <Spin tip="Loading Categories..." />
+          </div>
+        ) : (
+          <Row gutter={[16, 16]} style={{ marginTop: "30px" }}>
+            {categories.map((category) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={category._id}>
+                <Card
+                  hoverable
+                  onClick={() => handleCategoryClick(category.name)}
+                >
+                  <Title level={4}>{category.name}</Title>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
 
       {/* Testimonials Section */}

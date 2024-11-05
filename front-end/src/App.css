@@ -1,27 +1,43 @@
-body {
+/* Đặt các thiết lập chung */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-
-  font-family: Arial, sans-serif;
 }
 
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+}
+
+/* Nút bấm chung */
 .common-btn {
+  display: inline-block;
   background-color: #8a4baf;
-  color: white;
-  padding: 10px 20px;
+  color: #fff;
+  padding: 12px 24px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 18px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-top: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
 
-  &:hover {
-    background-color: #5f357e;
-  }
+/* Hiệu ứng hover cho nút */
+.common-btn:hover {
+  background-color: #5f357e;
+  transform: translateY(-2px);
+}
 
-  @media (max-width: 768px) {
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 768px) {
+  .common-btn {
     font-size: 16px;
+    padding: 10px 20px;
   }
 }

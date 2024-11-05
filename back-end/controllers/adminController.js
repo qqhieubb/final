@@ -5,9 +5,18 @@ import { rm } from "fs";
 import { promisify } from "util";
 import fs from "fs";
 import { User } from "../models/User.js";
+import { Category } from "../models/Category.js"; // Import Category model
 
 export const createCourse = TryCatch(async (req, res) => {
   const { title, description, category, createdBy, duration, price } = req.body;
+
+  // Kiểm tra xem category có tồn tại không
+  const categoryExists = await Category.findById(category);
+  if (!categoryExists) {
+    return res.status(400).json({
+      message: "Invalid Category",
+    });
+  }
 
   const image = req.file;
 

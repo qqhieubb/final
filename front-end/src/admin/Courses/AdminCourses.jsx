@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Layout from "../Utils/Layout";
 import { useNavigate } from "react-router-dom";
 import { CourseData } from "../../context/CourseContext";
@@ -11,8 +11,6 @@ import { Pagination, Button } from "antd";
 const AdminCourses = ({ user }) => {
   const navigate = useNavigate();
 
-  if (user && user.role !== "Instructor") return navigate("/");
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -24,14 +22,20 @@ const AdminCourses = ({ user }) => {
   const [btnLoading, setBtnLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(5);
-  const [categories, setCategories] = useState([]); // State để lưu danh sách Category từ API
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const { courses, fetchCourses } = CourseData();
+
+  // Điều hướng nếu user không có quyền
+  useEffect(() => {
+    if (user && user.role !== "Instructor") navigate("/");
+  }, [user, navigate]);
 
   // Lấy danh sách khóa học khi component được mount
   useEffect(() => {
     fetchCourses();
-  }, []);
+  }, [fetchCourses]);
 
   // Lấy danh sách Category từ API khi component được mount
   useEffect(() => {
@@ -41,9 +45,10 @@ const AdminCourses = ({ user }) => {
         setCategories(data.categories);
       } catch (error) {
         toast.error("Failed to load categories");
+      } finally {
+        setLoadingCategories(false);
       }
     };
-
     fetchCategories();
   }, []);
 
@@ -59,7 +64,7 @@ const AdminCourses = ({ user }) => {
     };
   };
 
-  const submitHandler = async (e) => {
+  const submitHandler = useCallback(async (e) => {
     e.preventDefault();
     setBtnLoading(true);
 
@@ -81,23 +86,23 @@ const AdminCourses = ({ user }) => {
       });
 
       toast.success(data.message);
-      setBtnLoading(false);
       await fetchCourses();
-      setImage("");
       setTitle("");
       setDescription("");
-      setDuration("");
-      setImagePrev("");
-      setCreatedBy("");
       setPrice("");
+      setCreatedBy("");
+      setDuration("");
+      setImage("");
+      setImagePrev("");
       setCategory("");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "An error occurred");
+    } finally {
       setBtnLoading(false);
     }
-  };
+  }, [title, description, category, price, createdBy, duration, image, fetchCourses]);
 
-  const deleteHandler = async (courseId) => {
+  const deleteHandler = useCallback(async (courseId) => {
     try {
       await axios.delete(`${server}/api/course/${courseId}`, {
         headers: {
@@ -109,7 +114,7 @@ const AdminCourses = ({ user }) => {
     } catch (error) {
       toast.error("Failed to delete the course");
     }
-  };
+  }, [fetchCourses]);
 
   // Lấy danh sách khóa học cho trang hiện tại
   const currentCourses = courses.slice(
@@ -224,9 +229,9 @@ const AdminCourses = ({ user }) => {
                   onChange={(e) => setCategory(e.target.value)}
                   required
                 >
-                  <option value="">Select Category</option>
+                  <option value="">{loadingCategories ? "Loading categories..." : "Select Category"}</option>
                   {categories.map((cat) => (
-                    <option value={cat.name} key={cat._id}>
+                    <option value={cat._id} key={cat._id}>
                       {cat.name}
                     </option>
                   ))}
