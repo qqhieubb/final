@@ -149,7 +149,7 @@ const AdminCourses = ({ user }) => {
                     {currentCourses.map((course) => (
                       <tr key={course._id}>
                         <td>{course.title}</td>
-                        <td>{course.category}</td>
+                        <td>{course.category?.name || course.category}</td>
                         <td>${course.price}</td>
                         <td>{course.duration} hours</td>
                         <td>{course.createdBy}</td>
