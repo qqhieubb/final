@@ -10,7 +10,7 @@ import { Comment } from "../models/Comments.js";
 
 
 export const getAllCourses = TryCatch(async (req, res) => {
-  const { category, sort, minPrice, maxPrice } = req.query;
+  const { category, sort, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
 
   let query = {};
 
@@ -40,20 +40,36 @@ export const getAllCourses = TryCatch(async (req, res) => {
       sortOption.createdAt = -1; // Sắp xếp giảm dần theo ngày tạo (mới nhất)
       break;
     case "oldest":
-      sortOption.createdAt = 1; // Sắp xếp tăng dần theo ngày tạo (cũ nhất)
+      sortOption.createdAt = 1;
       break;
     default:
       break;
   }
 
-  // Lấy danh sách khóa học theo query và sắp xếp
-  const courses = await Courses.find(query).populate("category", "name").sort(sortOption);
+  // Chuyển đổi page và limit thành số nguyên
+  const pageNumber = parseInt(page);
+  const limitNumber = parseInt(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Lấy tổng số khóa học (để tính số trang)
+  const totalCourses = await Courses.countDocuments(query);
+
+  // Lấy danh sách khóa học theo query, sắp xếp và phân trang
+  const courses = await Courses.find(query)
+    .populate("category", "name")
+    .sort(sortOption)
+    .skip(skip)
+    .limit(limitNumber);
 
   res.status(200).json({
     courses,
+    pagination: {
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalCourses / limitNumber),
+      totalCourses,
+    },
   });
 });
-
 
 
 export const getSingleCourse = TryCatch(async (req, res) => {

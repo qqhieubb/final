@@ -12,7 +12,8 @@ import Account from "./pages/account/Account";
 import { UserData } from "./context/UserContext";
 import Loading from "./components/loading/Loading";
 import Courses from "./pages/courses/Courses";
-import CourseDescription from "./pages/coursedescription/CourseDescription";
+// import CourseDescription from "./pages/coursedescription/CourseDescription";
+import CourseDescV2 from "./pages/coursedescription/CourseDescV2";
 import PaymentSuccess from "./pages/paymentsuccess/PaymentSuccess";
 import Dashboard from "./pages/dashboard/Dashboard";
 import CourseStudy from "./pages/coursestudy/CourseStudy";
@@ -23,6 +24,7 @@ import AdminUsers from "./admin/Users/AdminUsers";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import CategoryManagement from "./admin/Category/CategoryManagement";
+import { CartProvider } from "./context/CartContext";
 
 const App = () => {
   const { isAuth, user, loading } = UserData();
@@ -37,7 +39,8 @@ const App = () => {
         <Loading />
       ) : (
         <BrowserRouter>
-          <Header isAuth={isAuth} />
+          <CartProvider>
+            <Header isAuth={isAuth} user={user} />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -62,7 +65,7 @@ const App = () => {
             />
             <Route
               path="/course/:id"
-              element={isAuth ? <CourseDescription user={user} /> : <Login />}
+              element={isAuth ? <CourseDescV2 user={user} /> : <Login />}
             />
             <Route
               path="/payment-success/:id"
@@ -118,6 +121,8 @@ const App = () => {
             )}
           </Routes>
           <Footer />
+          </CartProvider>
+
         </BrowserRouter>
       )}
     </>

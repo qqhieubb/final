@@ -10,7 +10,12 @@ const { Title } = Typography;
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
 
-  if (user  && user.mainrole !== "Admin" && user.role !== "Instructor") return navigate("/");
+  useEffect(() => {
+    if (user && (user.mainrole !== "Admin" && user.role !== "Instructor")) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+  
 
 
   const [stats, setStats] = useState([]);
