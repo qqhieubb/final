@@ -1,12 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Typography, Row, Col, Card, Empty } from "antd";
-import { CourseData } from "../../context/CourseContext";
+import { useParams } from "react-router-dom";
+import axios from "axios";
 import CourseCard from "../../components/coursecard/CourseCard";
+import { server } from "../../main";
 
 const { Title } = Typography;
 
-const Dashbord = () => {
-  const { mycourse } = CourseData();
+const Dashboard = () => {
+  const { id } = useParams(); // Get user ID from the route
+  const [mycourse, setMyCourse] = useState([]);
+
+  useEffect(() => {
+    const fetchUserCourseSubscription = async () => {
+      try {
+        const { data } = await axios.get(
+          `${server}/api/user/get_course_payment?userId=${id}`,
+          {
+            headers: {
+              token: localStorage.getItem("token"),
+            },
+          }
+        );
+
+        const mapData = data.courses.map(c => (
+          {
+            ...c.courseId
+          }
+        ))
+        setMyCourse(mapData);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    };
+
+    fetchUserCourseSubscription();
+  }, []); // Only re-run the effect if `id` changes
 
   return (
     <div style={{ padding: "20px" }}>
@@ -35,4 +64,4 @@ const Dashbord = () => {
   );
 };
 
-export default Dashbord;
+export default Dashboard;

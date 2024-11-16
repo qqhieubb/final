@@ -67,7 +67,8 @@ const Lecture = ({ user }) => {
   async function fetchProgress() {
     try {
       const { data } = await axios.get(
-        `${server}/api/user/progress?course=${params.id}`,
+        // `${server}/api/user/progress?course=${params.id}`,
+        `${server}/api/user/course_progress?course=${params.id}&userId=${user._id}`,
         {
           headers: {
             token: localStorage.getItem("token"),

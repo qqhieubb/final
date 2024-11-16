@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { server } from "../../main";
@@ -9,60 +9,69 @@ import queryString from "query-string";
 const { Title } = Typography;
 const { Option } = Select;
 
-const Courses = () => {
+const Courses = ({user}) => {
   const location = useLocation();
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCourses, setTotalCourses] = useState(0);
   const pageSize = 5;
   const [sortOption, setSortOption] = useState("price-asc");
-  const [priceRange, setPriceRange] = useState([0, 500 * 500]);
+  const [priceRange, setPriceRange] = useState([0, 100000000000000000]);
   const { category } = queryString.parse(location.search);
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setLoading(true);
-      try {
-        const { data } = await axios.get(`${server}/api/course/all`, {
-          params: {
-            category,
-            sort: sortOption,
-            minPrice: priceRange[0],
-            maxPrice: priceRange[1],
-            page: currentPage,
-            limit: pageSize,
-          },
-        });
-        setCourses(data.courses);
-        setCurrentPage(data.pagination.currentPage);
-        setTotalPages(data.pagination.totalPages);
-        setTotalCourses(data.pagination.totalCourses);
-      } catch (error) {
-        console.error("Failed to fetch courses", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourses();
+  console.log(user)
+  const fetchCourses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get(`${server}/api/course/all`, {
+        params: {
+          category,
+          sort: sortOption,
+          minPrice: priceRange[0],
+          maxPrice: priceRange[1],
+          page: currentPage,
+          limit: pageSize,
+          role: user.role
+        },
+      });
+      setCourses(data.courses);
+      setCurrentPage(data.pagination.currentPage);
+      setTotalPages(data.pagination.totalPages);
+      setTotalCourses(data.pagination.totalCourses);
+    } catch (error) {
+      console.error("Failed to fetch courses", error);
+    } finally {
+      setLoading(false);
+    }
   }, [category, sortOption, priceRange, currentPage]);
 
+  // Chỉ gọi lại fetchCourses khi các dependency thực sự thay đổi
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
   };
 
-  const handleSortChange = (value) => {
-    setSortOption(value);
-    setCurrentPage(1); // Reset to first page on sort change
-  };
+  const handleSortChange = useCallback((value) => {
+    if (value !== sortOption) {
+      setSortOption(value);
+      setCurrentPage(1); // Quay lại trang đầu tiên khi thay đổi sắp xếp
+    }
+  }, [sortOption]);
 
-  const handlePriceChange = (value) => {
-    setPriceRange(value);
-    setCurrentPage(1); // Reset to first page on price change
-  };
-
+  const handlePriceChange = useCallback((value) => {
+    if (value[0] !== priceRange[0] || value[1] !== priceRange[1]) {
+      setPriceRange(value);
+      setCurrentPage(1); // Quay lại trang đầu tiên khi thay đổi giá
+    }
+  }, [priceRange]);
+ 
   return (
     <div style={{ padding: "20px" }}>
       <Title level={2} style={{ textAlign: "center" }}>

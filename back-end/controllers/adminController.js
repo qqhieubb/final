@@ -6,9 +6,10 @@ import { promisify } from "util";
 import fs from "fs";
 import { User } from "../models/User.js";
 import { Category } from "../models/Category.js"; 
+import { TeacherCourses } from "../models/TeacherCourses.js";
 
 export const createCourse = TryCatch(async (req, res) => {
-  const { title, description, category, createdBy, duration, price } = req.body;
+  const { title, description, category, createdBy, duration, price, userId } = req.body;
 
   // Kiểm tra xem category có tồn tại không
   const categoryExists = await Category.findById(category);
@@ -20,7 +21,7 @@ export const createCourse = TryCatch(async (req, res) => {
 
   const image = req.file;
 
-  await Courses.create({
+  const newCourse = await Courses.create({
     title,
     description,
     category,
@@ -29,6 +30,12 @@ export const createCourse = TryCatch(async (req, res) => {
     duration,
     price,
   });
+
+    const newTeacherCourse = new TeacherCourses({
+      teacherId: userId,
+      courseId: newCourse._id
+    });
+    await newTeacherCourse.save();
 
   res.status(201).json({
     message: "Course Created Successfully",
@@ -126,7 +133,7 @@ export const getAllUser = TryCatch(async (req, res) => {
 });
 
 export const updateRole = TryCatch(async (req, res) => {
-  if (req.user.mainrole !== "Admin")
+  if (req.user.role !== "Admin")
     return res.status(403).json({
       message: "This endpoint is assign to Admin",
     });

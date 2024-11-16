@@ -30,6 +30,7 @@ const AdminUsers = ({ user }) => {
 
   useEffect(() => {
     fetchUsers();
+    
   }, []);
 
   const updateRole = async (id) => {
@@ -40,6 +41,29 @@ const AdminUsers = ({ user }) => {
           const { data } = await axios.put(
             `${server}/api/user/${id}`,
             {},
+            {
+              headers: {
+                token: localStorage.getItem("token"),
+              },
+            }
+          );
+          toast.success(data.message);
+          fetchUsers();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Error updating role");
+        }
+      },
+    });
+  };
+
+  const updateUserToInstructor = async (id) => {
+    Modal.confirm({
+      title: "Are you sure you want to update this user's role?",
+      onOk: async () => {
+        try {
+          const { data } = await axios.post(
+            `${server}/api/role_instructor`,
+            {userId: id},
             {
               headers: {
                 token: localStorage.getItem("token"),
@@ -77,12 +101,13 @@ const AdminUsers = ({ user }) => {
       dataIndex: "role",
       key: "role",
     },
+    
     {
-      title: "Update Role",
-      key: "updateRole",
+      title: "Update Role to Instructor",
+      key: "instructor",
       render: (_, record) => (
-        <Button type="primary" onClick={() => updateRole(record._id)}>
-          Update Role
+        <Button type="primary" onClick={() => updateUserToInstructor(record._id)}>
+          Instructor
         </Button>
       ),
     },

@@ -7,10 +7,11 @@ import { Category } from "../models/Category.js";
 
 import { Progress } from "../models/Progress.js";
 import { Comment } from "../models/Comments.js";
-
+import mongoose from "mongoose";
+import { TeacherCourses } from "../models/TeacherCourses.js";
 
 export const getAllCourses = TryCatch(async (req, res) => {
-  const { category, sort, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+  const { category, sort, minPrice, maxPrice, page = 1, limit = 10, role, userId } = req.query;
 
   let query = {};
 
@@ -21,11 +22,11 @@ export const getAllCourses = TryCatch(async (req, res) => {
     }
     query.category = categoryDoc._id;
   }
-
   // Lọc theo khoảng giá
   if (minPrice && maxPrice) {
     query.price = { $gte: minPrice, $lte: maxPrice };
   }
+
 
   // Tạo tùy chọn sắp xếp
   let sortOption = {};
@@ -51,17 +52,44 @@ export const getAllCourses = TryCatch(async (req, res) => {
   const limitNumber = parseInt(limit);
   const skip = (pageNumber - 1) * limitNumber;
 
-  // Lấy tổng số khóa học (để tính số trang)
-  const totalCourses = await Courses.countDocuments(query);
 
+  let totalCourses = ""
+  let courses = ""
+  if (role && role == "Instructor" && userId) {
+    totalCourses = await TeacherCourses.countDocuments({teacherId: userId});
+
+    // Get instructor's courses with pagination
+    const teacherCourses = await TeacherCourses.find({teacherId: userId})
+      .populate("courseId")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNumber);
+      const user = await User.findById(userId)
+
+  console.log(user)
+    // Extract course details from TeacherCourses
+    courses = teacherCourses.map((record) => record.courseId);
+    return res.status(200).json({
+      courses,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages: Math.ceil(totalCourses / limitNumber),
+        totalCourses,
+      },
+    });
+  }
+
+
+  totalCourses = await Courses.countDocuments();
   // Lấy danh sách khóa học theo query, sắp xếp và phân trang
-  const courses = await Courses.find(query)
+  
+  courses = await Courses.find(query)
     .populate("category", "name")
     .sort(sortOption)
     .skip(skip)
     .limit(limitNumber);
 
-  res.status(200).json({
+  return res.status(200).json({
     courses,
     pagination: {
       currentPage: pageNumber,
@@ -73,19 +101,35 @@ export const getAllCourses = TryCatch(async (req, res) => {
 
 
 export const getSingleCourse = TryCatch(async (req, res) => {
-  const course = await Courses.findById(req.params.id);
+  try {
+    console.log("req.params infinite: ", req.params)
+    const { id } = req.params
 
-  res.json({
-    course,
-  });
+    const course = await Courses.findById({ _id: new mongoose.Types.ObjectId(id) });
+    // const singleCourse = await CourseSubscription.find
+    res.status(200).json({
+      course,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "An error occurred.", error: error.message || error });
+  }
 });
 
+export const getFullInfoCourse = async (req, res) => {
+  try {
+    const course = await Courses.findById({ _id: new mongoose.Types.ObjectId(req.params.id) });
+    res.status(200).json({
+      course,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "An error occurred.", error: error.message || error });
+  }
+};
+
 export const fetchLectures = TryCatch(async (req, res) => {
-  const lectures = await Lecture.find({ course: req.params.id });
-
+  const lectures = await Lecture.find({ course: new mongoose.Types.ObjectId(req.params.id) });
   const user = await User.findById(req.user._id);
-
-  if (user.role === "Instructor") {
+  if (user.role === "Instructor" || user.role == 'User') {
     return res.json({ lectures });
   }
 

@@ -24,14 +24,16 @@ const CommentSection = ({ courseId }) => {
 
   useEffect(() => {
     fetchComments(courseId);
-  }, [courseId, fetchComments]);
+  }, [courseId]); // Xóa fetchComments khỏi dependency để tránh gọi lại
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (commentText.trim()) {
-      addComment(courseId, commentText).then(() => {
-        fetchComments(courseId);
-      });
-      setCommentText("");
+      try {
+        await addComment(courseId, commentText);
+        setCommentText("");
+      } catch (error) {
+        toast.error("Failed to add comment");
+      }
     } else {
       toast.error("Comment cannot be empty");
     }

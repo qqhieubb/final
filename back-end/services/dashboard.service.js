@@ -1,8 +1,8 @@
 import { User } from "../models/User.js"
 import { Courses } from "../models/Courses.js";
 import { TeacherCourses } from "../models/TeacherCourses.js";
-import mongoose from "mongoose";
 import { CourseSubscription } from "../models/CourseSubscription.js"
+import mongoose from "mongoose";
 
 class DashBoardService {
     totalRole = async (req, res) => {
@@ -10,7 +10,7 @@ class DashBoardService {
             const [totalUsers, totalInstructors, totalAdmins] = await Promise.all([
                 User.countDocuments({ role: "User" }),
                 User.countDocuments({ role: "Instructor" }),
-                User.countDocuments({ mainrole: "Admin" }),
+                User.countDocuments({ role: "Admin" }),
             ]);
 
             res.status(200).json({ totalUsers, totalInstructors, totalAdmins });
@@ -55,40 +55,93 @@ class DashBoardService {
         }
     };
 
-    totalRevenueTeacher = async (req, res) => {
+    
+    totalRevenueByInstructor = async (req, res) => {
         try {
-            const { userId, startDate, endDate } = req.query;
+            // Aggregate revenue grouped by each instructor
+            const revenueByInstructor = await TeacherCourses.aggregate([
+                {
+                    // Join TeacherCourses with CourseSubscription on courseId
+                    $lookup: {
+                        from: "coursesubscriptions",
+                        localField: "courseId",
+                        foreignField: "courseId",
+                        as: "subscriptions",
+                    },
+                },
+                {
+                    // Unwind subscriptions to calculate total revenue for each entry
+                    $unwind: "$subscriptions",
+                },
+                {
+                    // Join CourseSubscription with Courses to get course price
+                    $lookup: {
+                        from: "courses",
+                        localField: "subscriptions.courseId",
+                        foreignField: "_id",
+                        as: "courseDetails",
+                    },
+                },
+                {
+                    // Unwind courseDetails to access course price
+                    $unwind: "$courseDetails",
+                },
+                {
+                    // Group by teacherId and sum the revenue from each course price
+                    $group: {
+                        _id: "$teacherId",
+                        totalRevenue: { $sum: "$courseDetails.price" },
+                    },
+                },
+                {
+                    // Join with the users collection to get instructor details (e.g., name)
+                    $lookup: {
+                        from: "users",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "instructorDetails",
+                    },
+                },
+                {
+                    // Unwind instructorDetails to access instructor information
+                    $unwind: "$instructorDetails",
+                },
+                {
+                    // Project fields for the response
+                    $project: {
+                        _id: 0,
+                        instructor: "$instructorDetails.name",
+                        totalRevenue: 1,
+                    },
+                },
+            ]);
 
-            // lấy danh sách khóa học của teacher
-            const getListCoursesTeacher = await TeacherCourses.find({ teacherId: userId }).select("courseId");
+            return res.status(200).json(revenueByInstructor);
+        } catch (error) {
+            console.error("Error fetching total revenue by instructor:", error);
+            return { message: "Error occurred.", error: error.message };
+        }
+    };
 
-            // Ensure getListCoursesTeacher has data
-            if (!getListCoursesTeacher || getListCoursesTeacher.length === 0) {
-                return res.status(404).json({ message: "No courses found for the specified teacher." });
+
+    acceptInstructor = async (req, res) => {
+        const { userId } = req.body;
+
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
             }
 
-            // Extract courseIds
-            const courseIds = getListCoursesTeacher.map((c) => new mongoose.Types.ObjectId(c.courseId));
+            // Toggle role between 'User' and 'Instructor'
+            user.role = user.role === 'User' ? 'Instructor' : 'User';
 
-            // Date filter if provided
-            const dateFilter = {};
-            if (startDate) dateFilter.$gte = new Date(startDate);
-            if (endDate) dateFilter.$lte = new Date(endDate);
-            console.log(dateFilter.hasOwnProperty("$gte"))
-            // lấy tiền của khóa học của teacher
-            const courseSub = await CourseSubscription.find({
-                courseId: { $in: courseIds },
-                ...(dateFilter.hasOwnProperty("$gte") ? { createdAt: dateFilter } : {}), // Add createdAt filter only if $gte is present
-            }).populate({
-                path: "courseId", // This is the field in CourseSubscription that references Courses
-                select: "title price", // Choose specific fields you want from Courses
-            });
-            const totalRevenueCourseByTeacher = courseSub.reduce((acc, course) => acc + course.courseId.price, 0);
+            await user.save(); // Save the updated user role to the database
 
-            return { userId, totalRevenueCourseByTeacher }
+            res.status(200).json({ message: `User role updated successfully` });
         } catch (error) {
-            console.error("Error fetching teacher's total price:", error); // Log full error to console
-            res.status(500).json({ message: "Đã xảy ra lỗi.", error: error.message || error });
+            console.error("Check instructor", error); // Log full error to console
+            res.status(500).json({ message: "An error occurred.", error: error.message || error });
         }
     }
 }

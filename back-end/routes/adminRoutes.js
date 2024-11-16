@@ -44,5 +44,6 @@ router.post('/send_email', async (req, res) => {
 
 router.get("/total_role", dashboardService.totalRole);
 router.get("/total_course_category", dashboardService.countCoursesByCategory);
-router.get("/total_revenue_teacher", dashboardService.totalRevenueTeacher);
+router.get("/total_revenue_teacher", dashboardService.totalRevenueByInstructor);
+router.post("/role_instructor", dashboardService.acceptInstructor);
 export default router;

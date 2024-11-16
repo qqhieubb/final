@@ -5,6 +5,7 @@ import { Order } from "../models/Order.js";
 import dotenv from 'dotenv';
 import paymentService from "../services/payment.service.js";
 import { CourseSubscription } from "../models/CourseSubscription.js";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -54,7 +55,7 @@ router.post("/payment-courses", async (req, res) => {
 
         const order = await Order.findById(orderId);
         const courses = await Courses.find({ _id: { $in: order.courseIds } });
-
+        console.log(courses)
         const responseCheckout = await paymentService.createCheckout({
             userId, courses, orderId
         });
@@ -78,6 +79,10 @@ router.get("/register-courses/:orderId", async (req, res) => {
             const normalCourseSub = coursesOrder.courseIds.map(course => ({ userId: coursesOrder.userId, courseId: course._id }))
             console.log("normalCourseSub: ", normalCourseSub)
             await CourseSubscription.create(normalCourseSub);
+            
+            const user = await User.findById(coursesOrder.userId);
+            user.subscription = [...user.subscription, ...coursesOrder.courseIds];
+            await user.save();
             res.redirect("http://localhost:5173/")
         }
     } catch (err) {
@@ -87,17 +92,23 @@ router.get("/register-courses/:orderId", async (req, res) => {
 
 // update rating courses (cập nhật rating)
 router.post("/courses/rating", async (req, res) => {
-    const { orderId, courseId, userId, rating } = req.body;
-
+    const { courseId, userId, rating } = req.body;
+    
     try {
-        const course = await Order.findById(orderId);
-        if (course.status == 'paid') {
-            const updateRating = await CourseSubscription.findOneAndUpdate({ courseId, userId }, { rating }, { new: true });
-            res.status(200).json(updateRating);
-        }
+      const updateRating = await CourseSubscription.findOneAndUpdate(
+        { courseId: new mongoose.Types.ObjectId(courseId), userId: new mongoose.Types.ObjectId(userId) },
+        { rating },
+        { new: true }
+      );
+      if (!updateRating) {
+        return res.status(404).json({ message: "Subscription not found" });
+      }
+  
+      res.status(200).json(updateRating);
     } catch (error) {
-        return res.status(500).json({ message: error });
+      console.error("Error updating rating:", error);
+      res.status(500).json({ message: "Failed to update rating" });
     }
-});
+  });
 
 export default router;

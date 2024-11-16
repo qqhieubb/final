@@ -22,7 +22,7 @@ class PaymentService {
         price_data: {
           currency: 'vnd', // Currency type
           product_data: {
-            name: "Food 01", // Product name
+            name: course.title, // Product name
           },
           unit_amount: course.price * 100, // Price in cents (multiply by 100)
         },
@@ -55,6 +55,7 @@ class PaymentService {
       return {
         status: 500,
         message: 'Failed to create checkout session',
+        error
       };
     }
   };

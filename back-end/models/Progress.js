@@ -3,17 +3,17 @@ import mongoose from "mongoose";
 const schema = new mongoose.Schema(
   {
     course: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: "String",
       ref: "Courses",
     },
     completedLectures: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: "String",
         ref: "Lecture",
       },
     ],
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: "String",
       ref: "User",
     },
   },

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { server } from "../main";
 import toast from "react-hot-toast";
@@ -10,19 +10,18 @@ export const CommentContextProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   // Fetch all comments for a specific course
-  async function fetchComments(courseId) {
+  const fetchComments = useCallback(async (courseId) => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${server}/api/${courseId}/comments`); // Không cần /course ở đây
+      const { data } = await axios.get(`${server}/api/${courseId}/comments`);
       setComments(data.comments);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to fetch comments");
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
   
-
   // Add a new comment to a specific course
   async function addComment(courseId, commentText) {
     setLoading(true);

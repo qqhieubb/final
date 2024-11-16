@@ -44,7 +44,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
-            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses" element={<Courses user={user}/>} />
             <Route
               path="/account"
               element={isAuth ? <Account user={user} /> : <Login />}

@@ -8,7 +8,7 @@ const { Header: AntHeader } = Layout;
 const { Title } = Typography;
 
 const Header = ({ isAuth, user }) => {
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const [drawerVisible, setDrawerVisible] = useState(false);
 
   const cartCount = cartItems.length;
@@ -27,52 +27,71 @@ const Header = ({ isAuth, user }) => {
     removeFromCart(courseId);
   };
 
-  const handlePayment = async (courseId) => {
+const handlePayment = async () => {
+  try {
+    const orderResponse = await fetch("http://localhost:5000/api/order-courses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: user._id,
+        courseIds: cartItems.map((item) => item._id),
+      }),
+    });
+
+    if (!orderResponse.ok) {
+      throw new Error("Order API call failed");
+    }
+
+    const orderData = await orderResponse.json();
+    const orderId = orderData.order_id;
+
+    const paymentResponse = await fetch("http://localhost:5000/api/payment-courses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        orderId: orderId,
+        userId: user._id,
+      }),
+    });
+
+    if (!paymentResponse.ok) {
+      throw new Error("Payment API call failed");
+    }
+
+    clearCart(); // Clear all items from cart at once
+
+    const paymentData = await paymentResponse.json();
+    const { url } = paymentData;
+
+    window.location.href = url;
+  } catch (error) {
+    console.error(error);
+    alert("An error occurred during the payment process.");
+  }
+};
+
+
+  const sendEmailInstructor = async () => {
     try {
-      // Step 1: Call the order API to place the order and get the order_id
-      const orderResponse = await fetch("http://localhost:5000/api/order-courses", {
+      const res = await fetch("http://localhost:5000/api/user/become_instructor", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user._id,
-          courseIds: [courseId], // Can be expanded to multiple courses
-        }),
-      });
-
-      // Check if the order was successful
-      if (!orderResponse.ok) {
-        throw new Error("Order API call failed");
-      }
-      const orderData = await orderResponse.json();
-
-      // Assuming orderData contains the order_id
-      const orderId = orderData.order_id;
-
-      // Step 2: Call the payment API with the order_id to create Stripe session
-      const paymentResponse = await fetch("http://localhost:5000/api/payment-courses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          userId: user._id,
+          from: user.email
         }),
       });
 
       // Check if payment API was successful
-      if (!paymentResponse.ok) {
-        throw new Error("Payment API call failed");
+      if (!res.ok) {
+        throw new Error("Send require failure");
       }
-
-      const paymentData = await paymentResponse.json();
-      const { url } = paymentData; // Stripe redirect URL
-
-      // Step 3: Redirect user to Stripe for payment
-      await removeFromCart(courseId)
-      window.location.href = url; // Redirect to Stripe checkout page
     } catch (error) {
       // Handle errors (e.g., network issues, API failures)
       console.error(error);
@@ -112,6 +131,14 @@ const Header = ({ isAuth, user }) => {
         </Menu.Item>
       </Menu>
 
+      {user.role === "User" && <Button
+        type="primary"
+        shape="round"
+        style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
+        onClick={sendEmailInstructor}
+      >
+        Become A Instructor
+      </Button>}
       {/* Cart and Auth Buttons */}
       <Space>
         <Button
@@ -150,24 +177,20 @@ const Header = ({ isAuth, user }) => {
             <div key={item._id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}>
               <span>{item.title}</span>
               <span>${item.price}</span>
-              <Button
-                type="link"
-                onClick={() => handlePayment(item._id)}
-                style={{ color: "#ff4d4f" }}
-              >
-                Payment
-              </Button>
-              <Button
-                type="link"
-                onClick={() => handleRemoveItem(item._id)}
-                style={{ color: "#ff4d4f" }}
-              >
-                Remove
-              </Button>
             </div>
           ))
         )}
+        {cartItems.length > 0 && (
+          <Button
+            type="primary"
+            onClick={handlePayment}
+            style={{ width: "100%", marginTop: "10px" }}
+          >
+            Proceed to Payment
+          </Button>
+        )}
       </Drawer>
+
     </AntHeader>
   );
 };

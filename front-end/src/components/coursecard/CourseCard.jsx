@@ -13,7 +13,6 @@ const CourseCard = ({ course }) => {
   const navigate = useNavigate();
   const { user, isAuth } = UserData();
   const { fetchCourses } = CourseData();
-
   const deleteHandler = async (id) => {
     Modal.confirm({
       title: "Confirm Delete",
@@ -45,10 +44,10 @@ const CourseCard = ({ course }) => {
               <Button type="primary" onClick={() => navigate(`/course/study/${course._id}`)}>
                 Study
               </Button>
-            ) : (
-              <Button type="primary" onClick={() => navigate(`/course/${course._id}`)}>
-                Get Started
-              </Button>
+            ) : ( // method get
+              <Button type="primary" onClick={() => navigate(`/course/${course._id}`)}> 
+              Register Course
+            </Button>
             )
           ) : (
             <Button type="primary" onClick={() => navigate(`/course/study/${course._id}`)}>
