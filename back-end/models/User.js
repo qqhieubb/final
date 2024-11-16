@@ -19,10 +19,7 @@ const schema = new mongoose.Schema(
       type: String,
       default: "User",
     },
-    mainrole: {
-      type: String,
-      default: "User",
-    },
+    
     subscription: [
       {
         type: mongoose.Schema.Types.ObjectId,

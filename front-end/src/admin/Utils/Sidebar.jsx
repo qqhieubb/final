@@ -40,7 +40,7 @@ const Sidebar = () => {
         <Menu.Item key="/admin/course" icon={<FaBook />}>
           <Link to={"/admin/course"}>Courses</Link>
         </Menu.Item>
-        {user && user.mainrole === "Admin" && (
+        {user && user.role === "Admin" && (
           <>
             <Menu.Item key="/admin/users" icon={<FaUserAlt />}>
               <Link to={"/admin/users"}>Users</Link>

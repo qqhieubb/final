@@ -9,7 +9,7 @@ const CategoryManagement = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || user.mainrole !== "Admin") {
+    if (!user || user.role !== "Admin") {
       navigate("/"); // Chuyển hướng về trang chủ nếu không phải Admin
     }
   }, [user, navigate]);

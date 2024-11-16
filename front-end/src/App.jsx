@@ -30,7 +30,7 @@ const App = () => {
   const { isAuth, user, loading } = UserData();
 
   // Kiểm tra xem người dùng có phải là Admin hoặc Instructor hay không
-  const isAdmin = user && user.mainrole === "Admin";
+  const isAdmin = user && user.role === "Admin";
   const isInstructor = user && user.role === "Instructor";
 
   return (

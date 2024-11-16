@@ -41,7 +41,8 @@ const Account = ({ user }) => {
               Dashboard
             </Button>
 
-            {user.role === "Instructor" && (
+            {/* Hiển thị nút cho cả Admin và Instructor */}
+            {(user.role === "Admin" || user.role === "Instructor") && (
               <Button
                 type="dashed"
                 icon={<MdDashboard />}

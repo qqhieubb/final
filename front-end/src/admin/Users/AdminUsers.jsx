@@ -11,7 +11,7 @@ const { Title } = Typography;
 const AdminUsers = ({ user }) => {
   const navigate = useNavigate();
 
-  if (user && user.mainrole !== "Admin") return navigate("/");
+  if (user && user.role !== "Admin") return navigate("/");
 
   const [users, setUsers] = useState([]);
 

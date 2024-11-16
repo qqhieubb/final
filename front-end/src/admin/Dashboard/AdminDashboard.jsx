@@ -16,10 +16,10 @@ const AdminDashboard = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Redirect non-admin users
+  // Redirect users who are not Admin or Instructor
   useEffect(() => {
-    if (user && (user.mainrole !== "Admin" && user.role !== "Instructor")) {
-      navigate("/");
+    if (user && user.role !== "Admin" && user.role !== "Instructor") {
+      navigate("/"); // Điều hướng về trang chủ nếu không phải Admin hoặc Instructor
     }
   }, [user, navigate]);
 
@@ -48,8 +48,10 @@ const AdminDashboard = ({ user }) => {
   return (
     <Layout>
       <div style={{ padding: "24px" }}>
-        <Title level={3} style={{ marginBottom: "24px" }}>Admin Dashboard</Title>
-        
+        <Title level={3} style={{ marginBottom: "24px" }}>
+          Admin and Instructor Dashboard
+        </Title>
+
         {loading ? (
           <Spin size="large" style={{ display: "block", margin: "0 auto" }} />
         ) : error ? (
