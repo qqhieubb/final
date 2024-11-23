@@ -1,104 +1,134 @@
 .admin-courses {
-    display: flex;
-    gap: 24px;
-    padding: 24px;
-  }
-  
-  .left, .right {
-    flex: 1;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  h1, h2 {
-    color: #1890ff;
-    font-weight: 600;
-    margin-bottom: 24px;
-  }
-  
-  .dashboard-content {
-    width: 100%;
-  }
-  
-  .dashboard-content table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #fff;
-  }
-  
-  .dashboard-content th, .dashboard-content td {
-    border: 1px solid #f0f0f0;
-    padding: 12px;
-    text-align: left;
-  }
-  
-  .dashboard-content th {
-    background-color: #fafafa;
-    font-weight: 500;
-  }
-  
-  .dashboard-content td {
-    text-align: center;
-  }
-  
-  .dashboard-content button {
-    background-color: #1890ff;
-    color: #fff;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .dashboard-content button:hover {
-    background-color: #40a9ff;
-  }
-  
-  .add-course {
-    margin-top: 24px;
-  }
-  
-  .course-form label {
-    display: block;
-    margin-top: 16px;
-    font-weight: 500;
-  }
-  
-  .course-form input,
-  .course-form select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 8px;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .course-form input[type="file"] {
-    padding: 4px;
-  }
-  
-  .common-btn {
-    margin-top: 16px;
-    width: 100%;
-    background-color: #1890ff;
-    color: #fff;
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  .common-btn:hover {
-    background-color: #40a9ff;
-  }
-  
-  img {
-    display: block;
-    margin-top: 16px;
-    border-radius: 8px;
-  }
-  
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+}
+
+.left, .right {
+  flex: 1;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+  color: #1890ff;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.dashboard-content {
+  width: 100%;
+}
+
+.dashboard-content table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+}
+
+.dashboard-content th, .dashboard-content td {
+  border: 1px solid #f0f0f0;
+  padding: 12px;
+  text-align: left;
+}
+
+.dashboard-content th {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.dashboard-content td {
+  text-align: center;
+}
+
+/* Actions container for buttons */
+.actions-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.actions-container button {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.actions-container .edit-btn {
+  background-color: #1890ff;
+  color: white;
+}
+
+.actions-container .delete-btn {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.actions-container .manage-btn {
+  background-color: #52c41a;
+  color: white;
+}
+
+.add-course {
+  margin-top: 24px;
+}
+
+.course-form label {
+  display: block;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+.course-form input,
+.course-form select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.common-btn {
+  margin-top: 16px;
+  width: 100%;
+  background-color: #1890ff;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  margin-top: 16px;
+  border-radius: 8px;
+}
+.actions-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+}
+
+.actions-container .edit-btn {
+  background-color: #1890ff;
+  color: white;
+}
+
+.actions-container .delete-btn {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.actions-container .manage-btn {
+  background-color: #52c41a;
+  color: white;
+}

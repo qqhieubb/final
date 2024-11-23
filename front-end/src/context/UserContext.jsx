@@ -21,6 +21,8 @@ export const UserContextProvider = ({ children }) => {
 
       toast.success(data.message);
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       setUser(data.user);
       setIsAuth(true);
       setBtnLoading(false);

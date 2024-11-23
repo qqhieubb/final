@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Row, Col, Typography, Statistic, Spin, message } from "antd";
+import { Card, Row, Col, Typography, Statistic, Spin, Button, message } from "antd";
 import Layout from "../Utils/Layout";
 import axios from "axios";
 import { server } from "../../main";
@@ -96,6 +96,19 @@ const AdminDashboard = ({ user }) => {
                 </Card>
               </Col>
             </Row>
+
+            {/* Add a direct button for Instructor to manage courses */}
+            {user && user.role === "Instructor" && (
+              <div style={{ textAlign: "center", marginTop: "24px" }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={() => navigate("/admin/course")}
+                >
+                  Manage My Courses
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

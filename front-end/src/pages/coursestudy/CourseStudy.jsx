@@ -82,7 +82,7 @@ const CourseStudy = ({ user }) => {
 
               <Text type="secondary">{course.description}</Text>
               <Divider />
-              <Text strong>Created by: {course.createdBy}</Text>
+              <Text strong>Created by: {course?.createdBy?.name}</Text>
               <Text>Duration: {course.duration} weeks</Text>
               <Divider />
               <Link to={`/lectures/${course._id}`}>

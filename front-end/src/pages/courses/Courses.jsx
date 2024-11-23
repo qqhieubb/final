@@ -36,6 +36,7 @@ const Courses = ({user}) => {
           role: user.role
         },
       });
+      console.log(data)
       setCourses(data.courses);
       setCurrentPage(data.pagination.currentPage);
       setTotalPages(data.pagination.totalPages);

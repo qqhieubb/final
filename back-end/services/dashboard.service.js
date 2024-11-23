@@ -1,10 +1,11 @@
-import { User } from "../models/User.js"
+import { User } from "../models/User.js";
 import { Courses } from "../models/Courses.js";
 import { TeacherCourses } from "../models/TeacherCourses.js";
-import { CourseSubscription } from "../models/CourseSubscription.js"
-import mongoose from "mongoose";
+import { CourseSubscription } from "../models/CourseSubscription.js";
+import { Order } from "../models/Order.js";
 
 class DashBoardService {
+    // Đếm tổng số người dùng theo vai trò
     totalRole = async (req, res) => {
         try {
             const [totalUsers, totalInstructors, totalAdmins] = await Promise.all([
@@ -15,35 +16,34 @@ class DashBoardService {
 
             res.status(200).json({ totalUsers, totalInstructors, totalAdmins });
         } catch (error) {
-            console.log(error)
-            res.status(500).send({ message: 'Failed', error: error.message });
+            console.error("Error in totalRole:", error);
+            res.status(500).send({ message: "Failed", error: error.message });
         }
-    }
+    };
 
+    // Đếm số lượng khóa học theo danh mục
     countCoursesByCategory = async (req, res) => {
         try {
             const counts = await Courses.aggregate([
                 {
                     $group: {
-                        _id: "$category", // Nhóm theo trường "category"
-                        totalCourses: { $count: {} }, // Đếm số lượng khóa học trong mỗi nhóm
+                        _id: "$category", // Nhóm theo category
+                        totalCourses: { $count: {} },
                     },
                 },
                 {
                     $lookup: {
-                        from: "categories", // Tên của collection Category
+                        from: "categories", // Tên collection category
                         localField: "_id",
                         foreignField: "_id",
                         as: "categoryDetails",
                     },
                 },
-                {
-                    $unwind: "$categoryDetails", // Giải nén mảng categoryDetails
-                },
+                { $unwind: "$categoryDetails" },
                 {
                     $project: {
-                        _id: 0, // Ẩn trường _id mặc định
-                        category: "$categoryDetails.name", // Giả sử "name" là tên của category
+                        _id: 0,
+                        category: "$categoryDetails.name",
                         totalCourses: 1,
                     },
                 },
@@ -51,79 +51,71 @@ class DashBoardService {
 
             res.status(200).json(counts);
         } catch (error) {
-            res.status(500).send({ message: 'Failed', error: error.message });
+            console.error("Error in countCoursesByCategory:", error);
+            res.status(500).send({ message: "Failed", error: error.message });
         }
     };
 
-    
+    // Tính tổng doanh thu theo từng tháng của từng giáo viên
     totalRevenueByInstructor = async (req, res) => {
         try {
-            // Aggregate revenue grouped by each instructor
-            const revenueByInstructor = await TeacherCourses.aggregate([
+            const revenueByInstructor = await Order.aggregate([
                 {
-                    // Join TeacherCourses with CourseSubscription on courseId
-                    $lookup: {
-                        from: "coursesubscriptions",
-                        localField: "courseId",
-                        foreignField: "courseId",
-                        as: "subscriptions",
-                    },
+                    $match: { status: "paid" }, // Chỉ lấy các đơn hàng đã thanh toán
                 },
                 {
-                    // Unwind subscriptions to calculate total revenue for each entry
-                    $unwind: "$subscriptions",
-                },
-                {
-                    // Join CourseSubscription with Courses to get course price
                     $lookup: {
-                        from: "courses",
-                        localField: "subscriptions.courseId",
+                        from: "courses", // Ghép nối với bảng Courses
+                        localField: "courseIds",
                         foreignField: "_id",
-                        as: "courseDetails",
+                        as: "courses",
                     },
                 },
                 {
-                    // Unwind courseDetails to access course price
-                    $unwind: "$courseDetails",
+                    $unwind: "$courses", // Tách từng khóa học
                 },
                 {
-                    // Group by teacherId and sum the revenue from each course price
+                    $lookup: {
+                        from: "users", // Ghép nối với bảng Users để lấy giáo viên
+                        localField: "courses.createdBy",
+                        foreignField: "_id",
+                        as: "instructor",
+                    },
+                },
+                {
+                    $unwind: "$instructor", // Tách từng giáo viên
+                },
+                {
                     $group: {
-                        _id: "$teacherId",
-                        totalRevenue: { $sum: "$courseDetails.price" },
+                        _id: {
+                            instructor: "$instructor.name", // Nhóm theo giáo viên
+                            month: { $month: "$createdAt" }, // Nhóm theo tháng
+                            year: { $year: "$createdAt" },   // Nhóm theo năm
+                        },
+                        totalRevenue: { $sum: "$price" }, // Tổng doanh thu
                     },
                 },
                 {
-                    // Join with the users collection to get instructor details (e.g., name)
-                    $lookup: {
-                        from: "users",
-                        localField: "_id",
-                        foreignField: "_id",
-                        as: "instructorDetails",
-                    },
-                },
-                {
-                    // Unwind instructorDetails to access instructor information
-                    $unwind: "$instructorDetails",
-                },
-                {
-                    // Project fields for the response
                     $project: {
                         _id: 0,
-                        instructor: "$instructorDetails.name",
+                        instructor: "$_id.instructor",
+                        month: "$_id.month",
+                        year: "$_id.year",
                         totalRevenue: 1,
                     },
                 },
+                { $sort: { year: 1, month: 1 } }, // Sắp xếp theo thời gian
             ]);
-
-            return res.status(200).json(revenueByInstructor);
+    
+            res.status(200).json(revenueByInstructor);
         } catch (error) {
-            console.error("Error fetching total revenue by instructor:", error);
-            return { message: "Error occurred.", error: error.message };
+            console.error("Error in totalRevenueByInstructor:", error);
+            res.status(500).json({ message: "Failed to calculate revenue", error: error.message });
         }
     };
+    
 
-
+    // Cập nhật vai trò user (giữa User và Instructor)
     acceptInstructor = async (req, res) => {
         const { userId } = req.body;
 
@@ -133,17 +125,17 @@ class DashBoardService {
                 return res.status(404).json({ message: "User not found" });
             }
 
-            // Toggle role between 'User' and 'Instructor'
-            user.role = user.role === 'User' ? 'Instructor' : 'User';
+            // Chuyển đổi vai trò giữa User và Instructor
+            user.role = user.role === "User" ? "Instructor" : "User";
 
-            await user.save(); // Save the updated user role to the database
+            await user.save();
 
             res.status(200).json({ message: `User role updated successfully` });
         } catch (error) {
-            console.error("Check instructor", error); // Log full error to console
+            console.error("Error in acceptInstructor:", error);
             res.status(500).json({ message: "An error occurred.", error: error.message || error });
         }
-    }
+    };
 }
 
-export default new DashBoardService()
+export default new DashBoardService();

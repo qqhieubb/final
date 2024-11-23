@@ -119,7 +119,7 @@ const CourseDescription = ({ user }) => {
             <Title level={2} style={{ textAlign: "center", color: "#8a4baf" }}>
               {course.title}
             </Title>
-            <Text type="secondary">Instructor: {course.createdBy}</Text>
+            <Text type="secondary">Instructor: {course?.createdBy?.name}</Text>
             <Text type="secondary">Duration: {course.duration} hour(s)</Text>
             <Divider />
             <Paragraph>{course.description}</Paragraph>

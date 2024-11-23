@@ -27,7 +27,7 @@ export const isAuth = async (req, res, next) => {
 // Middleware kiểm tra quyền Admin
 export const isAdmin = (req, res, next) => {
   try {
-    if (req.user.mainrole !== "Admin") {
+    if (req.user.role !== "Admin") {
       return res.status(403).json({
         message: "Access denied. Admins only.",
       });

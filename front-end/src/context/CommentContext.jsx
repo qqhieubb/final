@@ -44,6 +44,32 @@ export const CommentContextProvider = ({ children }) => {
     }
   }
 
+  // Add a reply to a specific comment
+  async function addReply(commentId, replyText) {
+    setLoading(true);
+    try {
+      const { data } = await axios.post(
+        `${server}/api/comments/${commentId}/replies`,
+        { replyText },
+        {
+          headers: {
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+      setComments((prev) =>
+        prev.map((comment) => 
+          comment._id === commentId ? { ...comment, replies: [...comment.replies, data.reply] } : comment
+        )
+      );
+      toast.success("Reply added successfully");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add reply");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Delete a comment
   async function deleteComment(commentId) {
     setLoading(true);
@@ -88,7 +114,7 @@ export const CommentContextProvider = ({ children }) => {
 
   return (
     <CommentContext.Provider
-      value={{ comments, fetchComments, addComment, deleteComment, updateComment, loading }}
+      value={{ comments, fetchComments, addComment, addReply, deleteComment, updateComment, loading }}
     >
       {children}
     </CommentContext.Provider>

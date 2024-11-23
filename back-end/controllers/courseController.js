@@ -9,6 +9,7 @@ import { Progress } from "../models/Progress.js";
 import { Comment } from "../models/Comments.js";
 import mongoose from "mongoose";
 import { TeacherCourses } from "../models/TeacherCourses.js";
+import { CourseSubscription } from "../models/CourseSubscription.js";
 
 export const getAllCourses = TryCatch(async (req, res) => {
   const { category, sort, minPrice, maxPrice, page = 1, limit = 10, role, userId } = req.query;
@@ -26,7 +27,6 @@ export const getAllCourses = TryCatch(async (req, res) => {
   if (minPrice && maxPrice) {
     query.price = { $gte: minPrice, $lte: maxPrice };
   }
-
 
   // Tạo tùy chọn sắp xếp
   let sortOption = {};
@@ -52,21 +52,19 @@ export const getAllCourses = TryCatch(async (req, res) => {
   const limitNumber = parseInt(limit);
   const skip = (pageNumber - 1) * limitNumber;
 
-
-  let totalCourses = ""
-  let courses = ""
+  let totalCourses = "";
+  let courses = "";
   if (role && role == "Instructor" && userId) {
-    totalCourses = await TeacherCourses.countDocuments({teacherId: userId});
+    totalCourses = await TeacherCourses.countDocuments({ teacherId: userId });
 
     // Get instructor's courses with pagination
-    const teacherCourses = await TeacherCourses.find({teacherId: userId})
+    const teacherCourses = await TeacherCourses.find({ teacherId: userId })
       .populate("courseId")
       .sort(sortOption)
       .skip(skip)
       .limit(limitNumber);
-      const user = await User.findById(userId)
+    const user = await User.findById(userId);
 
-  console.log(user)
     // Extract course details from TeacherCourses
     courses = teacherCourses.map((record) => record.courseId);
     return res.status(200).json({
@@ -79,18 +77,25 @@ export const getAllCourses = TryCatch(async (req, res) => {
     });
   }
 
-
   totalCourses = await Courses.countDocuments();
   // Lấy danh sách khóa học theo query, sắp xếp và phân trang
-  
+
   courses = await Courses.find(query)
     .populate("category", "name")
+    .populate("createdBy", "name email") // Thêm thông tin user ở createdBy
     .sort(sortOption)
     .skip(skip)
     .limit(limitNumber);
 
+  // Lấy số sao trung bình cho từng khóa học
+  const coursesWithRatings = await Promise.all(courses.map(async (course) => {
+    const ratings = await CourseSubscription.find({ courseId: course._id, rating: { $ne: null } });
+    const averageRating = ratings.length > 0 ? ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length : 0;
+    return { ...course.toObject(), averageRating };
+  }));
+
   return res.status(200).json({
-    courses,
+    courses: coursesWithRatings,
     pagination: {
       currentPage: pageNumber,
       totalPages: Math.ceil(totalCourses / limitNumber),
@@ -102,7 +107,6 @@ export const getAllCourses = TryCatch(async (req, res) => {
 
 export const getSingleCourse = TryCatch(async (req, res) => {
   try {
-    console.log("req.params infinite: ", req.params)
     const { id } = req.params
 
     const course = await Courses.findById({ _id: new mongoose.Types.ObjectId(id) });
@@ -160,9 +164,24 @@ export const fetchLecture = TryCatch(async (req, res) => {
 
 export const getMyCourses = TryCatch(async (req, res) => {
   const courses = await Courses.find({ _id: req.user.subscription });
+  
+  // Fetch ratings for each course
+  const coursesWithRatings = await Promise.all(courses.map(async (course) => {
+    const specialRate = await CourseSubscription.findOne({
+      courseId: course._id,
+      userId: req.user._id,
+    });
+    return {
+      ...course._doc,
+      rating: specialRate ? specialRate.rating : null, // Assign rating or null if not found
+    };
+  }));
+
+  console.log("đã vô");
+  console.log(courses)
 
   res.json({
-    courses,
+    courses: coursesWithRatings,
   });
 });
 
@@ -199,10 +218,6 @@ export const addProgress = TryCatch(async (req, res) => {
   if (!lectureId || !course) {
     return res.status(400).json({ message: "Missing lectureId or course parameter" });
   }
-
-  console.log("User ID:", req.user._id);
-  console.log("Course ID:", course);
-  console.log("Lecture ID:", lectureId);
 
   // Tìm kiếm tiến độ của người dùng cho khóa học
   let progress = await Progress.findOne({
@@ -354,6 +369,91 @@ export const updateComment = TryCatch(async (req, res) => {
   res.json({
     message: "Comment updated successfully",
     comment,
+  });
+});
+
+export const createCourse = TryCatch(async (req, res) => {
+  const { title, description, price, category, createdBy, duration, image } = req.body;
+
+  // Kiểm tra các tham số
+  if (!title || !description || !price || !category || !createdBy || !duration) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  // Set default image if not provided
+  const defaultImage = "https://files.fullstack.edu.vn/f8-prod/courses/21/63e1bcbaed1dd.png";
+  const courseImage = image || defaultImage;
+
+  // Tạo khóa học mới
+  const newCourse = new Courses({
+    title,
+    description,
+    price,
+    category,
+    createdBy,
+    duration,
+    image: courseImage,
+    createdAt: new Date(),
+  });
+
+  await newCourse.save();
+
+  res.status(201).json({
+    message: "Course created successfully",
+    course: newCourse,
+  });
+});
+
+export const updateCourse = TryCatch(async (req, res) => {
+  const { id } = req.params;
+  const { title, description, price, category, duration, image } = req.body;
+
+  // Tìm khóa học
+  const course = await Courses.findById(id);
+  if (!course) {
+    return res.status(404).json({ message: "Course not found" });
+  }
+
+  // Cập nhật chỉ các trường có giá trị
+  if (title) course.title = title;
+  if (description) course.description = description;
+  if (price) course.price = price;
+  if (category) course.category = category;
+  if (duration) course.duration = duration;
+  if (image) course.image = image;
+
+  await course.save();
+
+  res.json({
+    message: "Course updated successfully",
+    course,
+  });
+});
+
+export const addReply = TryCatch(async (req, res) => {
+  const { commentId } = req.params;
+  const { replyText } = req.body;
+
+  if (!replyText) {
+    return res.status(400).json({ message: "Reply text is required" });
+  }
+
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    return res.status(404).json({ message: "Comment not found" });
+  }
+
+  const reply = {
+    userId: req.user._id,
+    replyText,
+  };
+
+  comment.replies.push(reply);
+  await comment.save();
+
+  res.status(201).json({
+    message: "Reply added successfully",
+    reply,
   });
 });
 

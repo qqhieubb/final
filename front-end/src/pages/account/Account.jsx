@@ -32,27 +32,46 @@ const Account = ({ user }) => {
             <Text strong>Name: {user.name}</Text>
             <Text strong>Email: {user.email}</Text>
 
+            {/* Dashboard chung cho tất cả người dùng */}
             <Button
               type="primary"
               icon={<MdDashboard />}
               onClick={() => navigate(`/${user._id}/dashboard`)}
               block
             >
-              Dashboard
+              Enrolled Courses
             </Button>
 
-            {/* Hiển thị nút cho cả Admin và Instructor */}
-            {(user.role === "Admin" || user.role === "Instructor") && (
-              <Button
-                type="dashed"
-                icon={<MdDashboard />}
-                onClick={() => navigate(`/admin/dashboard`)}
-                block
-              >
-                Admin and Instructor Dashboard
-              </Button>
+            {/* Phần dành riêng cho Admin */}
+            {user.role === "Admin" && (
+              <div>
+                <Button
+                  type="dashed"
+                  icon={<MdDashboard />}
+                  onClick={() => navigate(`/admin/dashboard`)}
+                  block
+                >
+                  Admin Dashboard
+                </Button>
+              </div>
             )}
 
+            {/* Phần dành riêng cho Instructor */}
+            {user.role === "Instructor" && (
+              <div>
+              
+                <Button
+                  type="dashed"
+                  icon={<MdDashboard />}
+                  onClick={() => navigate(`/admin/course`)}
+                  block
+                >
+                  Manage Your Courses
+                </Button>
+              </div>
+            )}
+
+            {/* Logout */}
             <Button
               type="primary"
               danger

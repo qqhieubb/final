@@ -107,7 +107,7 @@ const AdminUsers = ({ user }) => {
       key: "instructor",
       render: (_, record) => (
         <Button type="primary" onClick={() => updateUserToInstructor(record._id)}>
-          Instructor
+          Update role
         </Button>
       ),
     },
