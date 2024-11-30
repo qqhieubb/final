@@ -1,26 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { PieChart, pieArcLabelClasses } from '@mui/x-charts/PieChart';
-import axios from 'axios';
-import { server } from '../../main';
+import React, { useEffect, useState } from "react";
+import { PieChart } from "@mui/x-charts/PieChart";
+import axios from "axios";
+import { server } from "../../main";
 
 export default function CategoryPieChart() {
   const [categoryData, setCategoryData] = useState([]);
 
-  // Fetch data from API
   useEffect(() => {
     async function fetchData() {
       try {
         const response = await axios.get(`${server}/api/total_course_category`);
         const data = response.data;
 
-        // Calculate total courses for percentage calculation
         const totalCourses = data.reduce((acc, curr) => acc + curr.totalCourses, 0);
 
-        // Calculate percentage for each category and assign random color
-        const categoryData = data.map(item => ({
+        const categoryData = data.map((item, index) => ({
           label: item.category,
-          value: ((item.totalCourses / totalCourses) * 100).toFixed(2), // Store as percentage
-          color: getRandomColor() // Assign a random color to each category
+          value: ((item.totalCourses / totalCourses) * 100).toFixed(1),
+          color: getFixedColor(index),
         }));
 
         setCategoryData(categoryData);
@@ -28,40 +25,67 @@ export default function CategoryPieChart() {
         console.error("Error fetching category data:", error);
       }
     }
-    
+
     fetchData();
   }, []);
 
-  // Function to generate random color for each category
-  function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
+  // Xóa Legend mặc định từ DOM sau khi render
+  useEffect(() => {
+    const legendElement = document.querySelector(".MuiChartsLegend-root"); // Tìm phần tử Legend
+    if (legendElement) {
+      legendElement.remove(); // Xóa phần tử khỏi DOM
     }
-    return color;
-  }
+  }, [categoryData]);
 
-  // Function to calculate percentage label
-  const getArcLabel = (params) => `${params.value}%`;
+  const getFixedColor = (index) => {
+    const colors = [
+      "#4CAF50",
+      "#2196F3",
+      "#FF5722",
+      "#FFC107",
+      "#9C27B0",
+      "#3F51B5",
+      "#FF9800",
+      "#607D8B",
+      "#8BC34A",
+      "#E91E63",
+    ];
+    return colors[index % colors.length];
+  };
 
   return (
-    <PieChart
-      series={[
-        {
-          outerRadius: 100,
-          data: categoryData,
-          arcLabel: getArcLabel,
-        },
-      ]}
-      sx={{
-        [`& .${pieArcLabelClasses.root}`]: {
-          fill: 'white',
-          fontSize: 12,
-        },
-      }}
-      height={200} // Increased height to allow more space
-      width={560} // Increased width to allow more space
-    />
+    <div style={{ textAlign: "center", marginTop: "20px" }}>
+            
+      <div style={{ display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center" }}>
+        <PieChart
+          series={[
+            {
+              outerRadius: 150,
+              innerRadius: 70,
+              data: categoryData,
+              arcLabel: () => "", // Không hiển thị nhãn trong lát cắt
+            },
+          ]}
+          height={400} // Đảm bảo canvas vuông
+          width={400} // Đảm bảo canvas vuông
+        />
+        {/* Custom Legend */}
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "20px" }}>
+          {categoryData.map((item) => (
+            <div key={item.label} style={{ display: "flex", alignItems: "center" }}>
+              <div
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  backgroundColor: item.color,
+                  marginRight: "5px",
+                }}
+              ></div>
+              <span style={{ fontSize: "14px" }}>{item.label}: {item.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

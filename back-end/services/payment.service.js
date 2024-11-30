@@ -10,52 +10,50 @@ let SESSION_ID = ""
 class PaymentService {
   createCheckout = async (data) => {
     try {
-      // Step 1: Create a new customer in Stripe
+      // Bước 1: Tạo một khách hàng mới trên Stripe
       const customer = await stripe.customers.create({
         metadata: {
           user_id: data.userId,
         },
       });
-
-      // Step 2: Prepare line items for each course
+  
+      // Bước 2: Chuẩn bị line items
       const lineItems = data.courses.map(course => ({
         price_data: {
-          currency: 'vnd', // Currency type
+          currency: 'VND', // Đơn vị tiền tệ là VND
           product_data: {
-            name: course.title, // Product name
+            name: course.title, // Tên khóa học
           },
-          unit_amount: course.price * 100, // Price in cents (multiply by 100)
+          unit_amount: course.price, // Giá tiền trực tiếp (1.000.000 VND)
         },
-        quantity: course.amount || 1, // Quantity of items (default to 1 if not specified)
+        quantity: course.amount || 1, // Số lượng (mặc định là 1)
       }));
-
-      // Step 3: Create a checkout session for payment
+  
+      // Bước 3: Tạo checkout session
       const session = await stripe.checkout.sessions.create({
-        customer: customer.id, // Attach the customer to the session
-        payment_method_types: ['card'], // Payment methods, e.g., card
-        line_items: lineItems, // Add the array of line items for multiple courses
-        mode: 'payment', // Mode of payment, e.g., 'payment' or 'subscription'
+        customer: customer.id, // ID khách hàng
+        payment_method_types: ['card'], // Phương thức thanh toán
+        line_items: lineItems, // Danh sách sản phẩm
+        mode: 'payment', // Chế độ thanh toán một lần
         shipping_address_collection: {
-          allowed_countries: ['VN'],
+          allowed_countries: ['VN'], // Chỉ cho phép địa chỉ tại Việt Nam
         },
-        success_url: `http://localhost:5000/api/register-courses/${data.orderId}`, // Redirect URL for success
-        // success_url: `http://127.0.0.1:5500/public/test.html`, // Redirect URL for success
-        cancel_url: 'http://127.0.0.1:5500/public/failure.html', // Redirect URL for cancellation
+        success_url: `http://localhost:5000/api/register-courses/${data.orderId}`,
+        cancel_url: 'http://127.0.0.1:5500/public/failure.html',
       });
-
-      SESSION_ID = session.id
+  
+      SESSION_ID = session.id;
       return {
         status: 'success',
         url: session.url,
-        session
+        session,
       };
     } catch (error) {
-      // Error handling
       console.error('Error creating checkout session:', error);
       return {
         status: 500,
         message: 'Failed to create checkout session',
-        error
+        error,
       };
     }
   };

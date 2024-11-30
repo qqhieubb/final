@@ -20,21 +20,21 @@ const CourseStudy = ({ user }) => {
     return null;
   }
 
+  const fetchCourse = async (courseId) => {
+    try {
+      const { data } = await axios.get(
+        `${server}/api/user/course_detail?userId=${user._id}&courseId=${courseId}`
+      );
+
+      setCourse(data.course); // Update course state with fetched data
+      setRating(data.course.rating || 0); // Initialize rating state if there's an existing rating
+    } catch (error) {
+      console.error("Error fetching course:", error);
+      message.error("Failed to load course data.");
+    }
+  };
+
   useEffect(() => {
-    const fetchCourse = async (courseId) => {
-      try {
-        const { data } = await axios.get(
-          `${server}/api/user/course_detail?userId=${user._id}&courseId=${courseId}`
-        );
-
-        setCourse(data.course); // Update course state with fetched data
-        setRating(data.course.rating || 0); // Initialize rating state if there's an existing rating
-      } catch (error) {
-        console.error("Error fetching course:", error);
-        message.error("Failed to load course data.");
-      }
-    };
-
     if (params.id) {
       fetchCourse(params.id); // Fetch the course data on component mount
     }
@@ -50,6 +50,9 @@ const CourseStudy = ({ user }) => {
 
       setRating(value); // Update the rating state with the new rating
       message.success("Rating submitted successfully!");
+
+      // Fetch updated course data
+      await fetchCourse(params.id);
     } catch (error) {
       message.error("Failed to submit rating. Please try again.");
       console.error("Rating submission error:", error);
@@ -74,11 +77,16 @@ const CourseStudy = ({ user }) => {
               <Title level={2}>{course.title}</Title>
               
               {/* Interactive 5-star rating component */}
-              <Rate
-                value={rating} // Set to current rating state
-                count={5}
-                onChange={handleRatingChange}
-              />
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Rate
+                  value={rating} // Set to current rating state
+                  count={5}
+                  onChange={handleRatingChange}
+                />
+                <Text>
+                  ({course.averageRating?.toFixed(1) || "No ratings"})
+                </Text>
+              </div>
 
               <Text type="secondary">{course.description}</Text>
               <Divider />

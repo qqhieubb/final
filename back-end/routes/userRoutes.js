@@ -33,7 +33,8 @@ router.post("/user/become_instructor", async (req, res) => {
     res.status(500).json({error, message: "failue become to instructor"});
   }
 });
-router.get("/user/get_course_payment", userService.getCoursePayment)
+router.get("/user/get_course_payment", userService.getCoursePayment);
 router.get("/user/course_progress", userService.getCourseProgress);
 router.get("/user/course_detail", userService.getCourseDetail);
+
 export default router;

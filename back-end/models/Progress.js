@@ -3,22 +3,24 @@ import mongoose from "mongoose";
 const schema = new mongoose.Schema(
   {
     course: {
-      type: "String",
+      type: mongoose.Schema.Types.ObjectId, // Tham chiếu đến khóa học
       ref: "Courses",
+      required: true, // Bắt buộc phải có khóa học
     },
     completedLectures: [
       {
-        type: "String",
+        type: mongoose.Schema.Types.ObjectId, // Tham chiếu đến bài giảng
         ref: "Lecture",
       },
     ],
     user: {
-      type: "String",
+      type: mongoose.Schema.Types.ObjectId, // Tham chiếu đến user
       ref: "User",
+      required: true, // Bắt buộc phải có user
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Thêm thời gian tạo và cập nhật
   }
 );
 

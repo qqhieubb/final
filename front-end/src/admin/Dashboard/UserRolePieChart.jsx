@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { PieChart } from "@mui/x-charts/PieChart";
 import axios from "axios";
 import { server } from "../../main";
-import { PieChart } from '@mui/x-charts/PieChart';
 
 const UserRolePieChart = () => {
-  const [data, setData] = useState(null); // Initially null for loading check
+  const [data, setData] = useState([]);
 
   useEffect(() => {
     axios
@@ -12,34 +12,44 @@ const UserRolePieChart = () => {
       .then((response) => {
         const { totalUsers, totalInstructors, totalAdmins } = response.data;
 
-        // Format the data for PieChart component
-        setData({
-          series: [
-            {
-              data: [
-                { id: 0, value: totalUsers, label: 'User' },
-                { id: 1, value: totalInstructors, label: 'Instructor' },
-                { id: 2, value: totalAdmins, label: 'Admin' },
-              ],
-            },
-          ],
-        });
+        setData([
+          { label: "User", value: totalUsers, color: "#4CAF50" },
+          { label: "Instructor", value: totalInstructors, color: "#FFC107" },
+          { label: "Admin", value: totalAdmins, color: "#2196F3" },
+        ]);
       })
-      .catch((error) => console.log("API call failed:", error));
+      .catch((error) => console.error("API error:", error));
   }, []);
 
-  if (!data) {
-    return <p>Loading...</p>; // Show loading message while data is being fetched
-  }
-
   return (
-    <div>
+    <div style={{ textAlign: "center" }}>
       <h3>User Roles Distribution</h3>
       <PieChart
-        series={data.series}
+        series={[
+          {
+            data: data,
+            outerRadius: 150,
+            innerRadius: 70,
+          },
+        ]}
+        height={400}
         width={400}
-        height={200}
       />
+      <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px" }}>
+        {data.map((item) => (
+          <div key={item.label} style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                width: "16px",
+                height: "16px",
+                backgroundColor: item.color,
+                marginRight: "5px",
+              }}
+            ></div>
+            <span>{item.label}: {item.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

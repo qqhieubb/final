@@ -22,19 +22,22 @@ class UserService {
                 message: 'Failed to get course register',
             };
         }
-    }
+    };
 
     getCourseProgress = async (req, res) => {
         try {
             const { userId, course } = req.query;
-            const progress = await Progress.findOne({ course, userId });
+
+            // Tìm kiếm tiến trình của người dùng trong khóa học
+            const progress = await Progress.findOne({ course, user: userId });
+
             // Nếu không tìm thấy tiến độ, trả về thông báo lỗi
             if (!progress) return res.status(404).json({ message: "Progress not found" });
 
-            // Lấy số lượng bài giảng cho khóa học
-            const allLectures = await Lecture.countDocuments({ course: req.query.course });
+            // Lấy tổng số bài giảng cho khóa học
+            const allLectures = await Lecture.countDocuments({ course });
 
-            // Kiểm tra xem allLectures có bằng 0 không để tránh phép chia cho 0
+            // Kiểm tra xem số lượng bài giảng có bằng 0 không (tránh phép chia cho 0)
             if (allLectures === 0) {
                 return res.status(404).json({
                     message: "No lectures found for this course",
@@ -45,10 +48,10 @@ class UserService {
             const completedLectures = progress.completedLectures.length;
 
             // Tính phần trăm tiến độ khóa học
-            const courseProgressPercentage = (completedLectures * 100) / allLectures;
+            const courseProgressPercentage = Math.round((completedLectures * 100) / allLectures);
 
             // Trả về thông tin tiến độ
-            res.json({
+            res.status(200).json({
                 courseProgressPercentage,
                 completedLectures,
                 allLectures,
@@ -56,10 +59,9 @@ class UserService {
             });
         } catch (error) {
             console.error("Error in getCourseProgress:", error);
-            return res.status(500).json({ error: error.message });
+            res.status(500).json({ message: "Failed to fetch course progress", error });
         }
-
-    }
+    };
 
     getCourseDetail = async (req, res) => {
         const { userId, courseId } = req.query;
@@ -73,18 +75,17 @@ class UserService {
                 userId: new mongoose.Types.ObjectId(userId),
             });
     
-            // Nếu không tìm thấy khóa học hoặc specialRate, xử lý hợp lý
+            // Nếu không tìm thấy khóa học, xử lý hợp lý
             if (!course) {
                 return res.status(404).json({ message: "Khóa học không tồn tại." });
             }
     
-            // Kiểm tra và gán giá trị `rating`, tránh lỗi null
+            // Kiểm tra và gán giá trị `rating` và `averageRating`
             const data = {
                 ...course._doc,
-                rating: specialRate ? specialRate.rating : null, // Nếu specialRate null, gán `rating` là null
+                rating: specialRate ? specialRate.rating : null, // Rating của người dùng hiện tại
+                averageRating: course.averageRating || 0, // Rating trung bình
             };
-    
-            console.log(data);
     
             // Trả về thông tin khóa học
             res.status(200).json({ course: data });

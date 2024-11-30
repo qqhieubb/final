@@ -8,14 +8,14 @@ import { Category } from "../models/Category.js";
 import { Progress } from "../models/Progress.js";
 import { Comment } from "../models/Comments.js";
 import mongoose from "mongoose";
-import { TeacherCourses } from "../models/TeacherCourses.js";
-import { CourseSubscription } from "../models/CourseSubscription.js";
+
 
 export const getAllCourses = TryCatch(async (req, res) => {
-  const { category, sort, minPrice, maxPrice, page = 1, limit = 10, role, userId } = req.query;
+  const { category, sort, minPrice, maxPrice, keyword, page = 1, limit = 10, role, userId } = req.query;
 
   let query = {};
 
+  // Lọc theo category nếu có
   if (category) {
     const categoryDoc = await Category.findOne({ name: new RegExp(`^${category}$`, "i") });
     if (!categoryDoc) {
@@ -23,50 +23,53 @@ export const getAllCourses = TryCatch(async (req, res) => {
     }
     query.category = categoryDoc._id;
   }
-  // Lọc theo khoảng giá
-  if (minPrice && maxPrice) {
-    query.price = { $gte: minPrice, $lte: maxPrice };
+
+  // Lọc theo khoảng giá cụ thể
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = Number(minPrice);
+    if (maxPrice) query.price.$lte = Number(maxPrice);
   }
 
-  // Tạo tùy chọn sắp xếp
-  let sortOption = {};
-  switch (sort) {
-    case "price-asc":
-      sortOption.price = 1; // Sắp xếp tăng dần theo giá
-      break;
-    case "price-desc":
-      sortOption.price = -1; // Sắp xếp giảm dần theo giá
-      break;
-    case "newest":
-      sortOption.createdAt = -1; // Sắp xếp giảm dần theo ngày tạo (mới nhất)
-      break;
-    case "oldest":
-      sortOption.createdAt = 1;
-      break;
-    default:
-      break;
+  // Tìm kiếm theo từ khóa (trong tiêu đề hoặc mô tả)
+  if (keyword) {
+    query.$or = [
+      { title: { $regex: keyword, $options: "i" } },
+      { description: { $regex: keyword, $options: "i" } },
+    ];
   }
 
-  // Chuyển đổi page và limit thành số nguyên
+  // Xử lý sắp xếp
+  const sortOptions = {
+    "price-asc": { price: 1 },
+    "price-desc": { price: -1 },
+    "newest": { createdAt: -1 },
+    "oldest": { createdAt: 1 },
+    "name-asc": { title: 1 },
+    "name-desc": { title: -1 },
+  };
+  const sortQuery = sortOptions[sort] || { createdAt: -1 };
+
+  // Xử lý phân trang
   const pageNumber = parseInt(page);
   const limitNumber = parseInt(limit);
   const skip = (pageNumber - 1) * limitNumber;
 
-  let totalCourses = "";
-  let courses = "";
-  if (role && role == "Instructor" && userId) {
-    totalCourses = await TeacherCourses.countDocuments({ teacherId: userId });
+  let totalCourses;
+  let courses;
 
-    // Get instructor's courses with pagination
-    const teacherCourses = await TeacherCourses.find({ teacherId: userId })
-      .populate("courseId")
-      .sort(sortOption)
+  // Nếu người dùng là Instructor
+  if (role === "Instructor" && userId) {
+    query.createdBy = userId; // Lọc các khóa học được tạo bởi Instructor
+    totalCourses = await Courses.countDocuments(query);
+
+    courses = await Courses.find(query)
+      .populate("category", "name")
+      .populate("createdBy", "name email") // Lấy thêm thông tin của người tạo
+      .sort(sortQuery) // Sắp xếp theo yêu cầu
       .skip(skip)
       .limit(limitNumber);
-    const user = await User.findById(userId);
 
-    // Extract course details from TeacherCourses
-    courses = teacherCourses.map((record) => record.courseId);
     return res.status(200).json({
       courses,
       pagination: {
@@ -77,25 +80,17 @@ export const getAllCourses = TryCatch(async (req, res) => {
     });
   }
 
-  totalCourses = await Courses.countDocuments();
-  // Lấy danh sách khóa học theo query, sắp xếp và phân trang
-
+  // Nếu người dùng không phải Instructor
+  totalCourses = await Courses.countDocuments(query);
   courses = await Courses.find(query)
     .populate("category", "name")
-    .populate("createdBy", "name email") // Thêm thông tin user ở createdBy
-    .sort(sortOption)
+    .populate("createdBy", "name email")
+    .sort(sortQuery)
     .skip(skip)
     .limit(limitNumber);
 
-  // Lấy số sao trung bình cho từng khóa học
-  const coursesWithRatings = await Promise.all(courses.map(async (course) => {
-    const ratings = await CourseSubscription.find({ courseId: course._id, rating: { $ne: null } });
-    const averageRating = ratings.length > 0 ? ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length : 0;
-    return { ...course.toObject(), averageRating };
-  }));
-
-  return res.status(200).json({
-    courses: coursesWithRatings,
+  res.status(200).json({
+    courses,
     pagination: {
       currentPage: pageNumber,
       totalPages: Math.ceil(totalCourses / limitNumber),
@@ -103,6 +98,29 @@ export const getAllCourses = TryCatch(async (req, res) => {
     },
   });
 });
+
+// Gợi ý các khóa học liên quan
+export const getRecommendedCourses = TryCatch(async (req, res) => {
+  const { id } = req.params;
+
+  // Tìm khóa học hiện tại
+  const course = await Courses.findById(id);
+  if (!course) return res.status(404).json({ message: "Course not found" });
+
+  // Tìm các khóa học cùng danh mục (loại trừ khóa học hiện tại)
+  const relatedCourses = await Courses.find({
+    category: course.category,
+    _id: { $ne: id },
+  })
+    .limit(5)
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    relatedCourses,
+  });
+});
+
+
 
 
 export const getSingleCourse = TryCatch(async (req, res) => {
@@ -163,27 +181,27 @@ export const fetchLecture = TryCatch(async (req, res) => {
 });
 
 export const getMyCourses = TryCatch(async (req, res) => {
-  const courses = await Courses.find({ _id: req.user.subscription });
-  
-  // Fetch ratings for each course
-  const coursesWithRatings = await Promise.all(courses.map(async (course) => {
-    const specialRate = await CourseSubscription.findOne({
-      courseId: course._id,
-      userId: req.user._id,
-    });
-    return {
-      ...course._doc,
-      rating: specialRate ? specialRate.rating : null, // Assign rating or null if not found
-    };
-  }));
+  const { role } = req.user;
 
-  console.log("đã vô");
-  console.log(courses)
+  if (role === "Instructor") {
+    const courses = await Courses.find({ createdBy: req.user._id })
+      .populate("category", "name")
+      .populate("createdBy", "name");
+
+    return res.json({
+      courses,
+    });
+  }
+
+  const courses = await Courses.find({ _id: { $in: req.user.subscription } })
+    .populate("category", "name")
+    .populate("createdBy", "name");
 
   res.json({
-    courses: coursesWithRatings,
+    courses,
   });
 });
+
 
 export const checkout = TryCatch(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -214,71 +232,63 @@ export const checkout = TryCatch(async (req, res) => {
 export const addProgress = TryCatch(async (req, res) => {
   const { lectureId, course } = req.query;
 
-  // Kiểm tra các tham số
   if (!lectureId || !course) {
     return res.status(400).json({ message: "Missing lectureId or course parameter" });
   }
 
-  // Tìm kiếm tiến độ của người dùng cho khóa học
-  let progress = await Progress.findOne({
-    user: req.user._id,
-    course: course,
-  });
+  let progress = await Progress.findOne({ user: req.user._id, course });
 
-  // Nếu không tìm thấy tiến độ, tạo mới
   if (!progress) {
     progress = new Progress({
       user: req.user._id,
-      course: course,
+      course,
       completedLectures: [],
     });
   }
 
-  // Kiểm tra xem lecture đã được hoàn thành chưa
   if (progress.completedLectures.includes(lectureId)) {
-    return res.json({
-      message: "Progress already recorded",
-    });
+    return res.json({ message: "Progress already recorded" });
   }
 
-  // Thêm lectureId vào danh sách hoàn thành và lưu tiến độ
   progress.completedLectures.push(lectureId);
   await progress.save();
 
+  // Tính lại tiến trình sau khi thêm
+  const allLectures = await Lecture.countDocuments({ course });
+  const completedLectures = progress.completedLectures.length;
+  const courseProgressPercentage = (completedLectures * 100) / allLectures;
+
   res.status(201).json({
-    message: "New progress added",
+    message: "Progress updated successfully",
+    courseProgressPercentage,
+    completedLectures,
+    allLectures,
   });
 });
 
 
 
+
 export const getYourProgress = TryCatch(async (req, res) => {
-  // Tìm kiếm tiến độ của người dùng cho khóa học cụ thể
   const progress = await Progress.findOne({
     user: req.user._id,
     course: req.query.course,
   });
 
-  // Nếu không tìm thấy tiến độ, trả về thông báo lỗi
-  if (!progress) return res.status(404).json({ message: "Progress not found" });
-
-  // Lấy số lượng bài giảng cho khóa học
-  const allLectures = await Lecture.countDocuments({ course: req.query.course });
-
-  // Kiểm tra xem allLectures có bằng 0 không để tránh phép chia cho 0
-  if (allLectures === 0) {
-    return res.status(404).json({
-      message: "No lectures found for this course",
-    });
+  if (!progress) {
+    console.log("Progress not found for user:", req.user._id, "course:", req.query.course);
+    return res.status(404).json({ message: "Progress not found" });
   }
 
-  // Tính số bài giảng đã hoàn thành
-  const completedLectures = progress.completedLectures.length;
+  const allLectures = await Lecture.countDocuments({ course: req.query.course });
+  if (allLectures === 0) {
+    console.log("No lectures found for course:", req.query.course);
+    return res.status(404).json({ message: "No lectures found for this course" });
+  }
 
-  // Tính phần trăm tiến độ khóa học
+  const completedLectures = progress.completedLectures.length;
   const courseProgressPercentage = (completedLectures * 100) / allLectures;
 
-  // Trả về thông tin tiến độ
   res.json({
     courseProgressPercentage,
     completedLectures,
@@ -286,6 +296,7 @@ export const getYourProgress = TryCatch(async (req, res) => {
     progress,
   });
 });
+
 
 
 // Add Comment Functionality
@@ -320,77 +331,24 @@ export const getComments = TryCatch(async (req, res) => {
   });
 });
 
-export const deleteComment = TryCatch(async (req, res) => {
-  const { commentId } = req.params;
 
-  const comment = await Comment.findById(commentId);
-
-  if (!comment) {
-    return res.status(404).json({
-      message: "Comment not found",
-    });
-  }
-
-  if (comment.userId.toString() !== req.user._id.toString() && req.user.role !== "Instructor") {
-    return res.status(403).json({
-      message: "You are not authorized to delete this comment",
-    });
-  }
-
-  await comment.remove();
-
-  res.json({
-    message: "Comment deleted successfully",
-  });
-});
-
-export const updateComment = TryCatch(async (req, res) => {
-  const { commentId } = req.params;
-  const { commentText } = req.body;
-
-  const comment = await Comment.findById(commentId);
-
-  if (!comment) {
-    return res.status(404).json({
-      message: "Comment not found",
-    });
-  }
-
-  if (comment.userId.toString() !== req.user._id.toString()) {
-    return res.status(403).json({
-      message: "You are not authorized to update this comment",
-    });
-  }
-
-  comment.commentText = commentText;
-
-  await comment.save();
-
-  res.json({
-    message: "Comment updated successfully",
-    comment,
-  });
-});
 
 export const createCourse = TryCatch(async (req, res) => {
   const { title, description, price, category, createdBy, duration, image } = req.body;
 
-  // Kiểm tra các tham số
   if (!title || !description || !price || !category || !createdBy || !duration) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  // Set default image if not provided
   const defaultImage = "https://files.fullstack.edu.vn/f8-prod/courses/21/63e1bcbaed1dd.png";
   const courseImage = image || defaultImage;
 
-  // Tạo khóa học mới
   const newCourse = new Courses({
     title,
     description,
     price,
     category,
-    createdBy,
+    createdBy, // Lưu ID của Instructor
     duration,
     image: courseImage,
     createdAt: new Date(),
@@ -403,6 +361,7 @@ export const createCourse = TryCatch(async (req, res) => {
     course: newCourse,
   });
 });
+
 
 export const updateCourse = TryCatch(async (req, res) => {
   const { id } = req.params;
@@ -430,30 +389,5 @@ export const updateCourse = TryCatch(async (req, res) => {
   });
 });
 
-export const addReply = TryCatch(async (req, res) => {
-  const { commentId } = req.params;
-  const { replyText } = req.body;
 
-  if (!replyText) {
-    return res.status(400).json({ message: "Reply text is required" });
-  }
-
-  const comment = await Comment.findById(commentId);
-  if (!comment) {
-    return res.status(404).json({ message: "Comment not found" });
-  }
-
-  const reply = {
-    userId: req.user._id,
-    replyText,
-  };
-
-  comment.replies.push(reply);
-  await comment.save();
-
-  res.status(201).json({
-    message: "Reply added successfully",
-    reply,
-  });
-});
 

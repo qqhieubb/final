@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Button, Typography } from "antd";
+import { Card, Button, Typography, Rate } from "antd";
 import { useNavigate } from "react-router-dom";
 import { UserData } from "../../context/UserContext";
 
@@ -30,9 +30,13 @@ const CourseCard = ({ course }) => {
       <br />
       <Text>Duration: {course.duration} hours</Text>
       <br />
-      <Text>Average Rating: {course.averageRating}</Text>
+      {/* Hiển thị rating trung bình */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <Rate allowHalf disabled value={course.averageRating || 0} />
+        <Text>({course.averageRating?.toFixed(1) || "No ratings"})</Text>
+      </div>
       <br />
-      <Text strong>Price: USD {course.price}</Text>
+      <Text strong>Price: VND {course.price}</Text>
     </Card>
   );
 };

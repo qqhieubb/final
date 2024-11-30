@@ -1,7 +1,6 @@
 import { User } from "../models/User.js";
 import { Courses } from "../models/Courses.js";
-import { TeacherCourses } from "../models/TeacherCourses.js";
-import { CourseSubscription } from "../models/CourseSubscription.js";
+
 import { Order } from "../models/Order.js";
 
 class DashBoardService {

@@ -95,20 +95,38 @@ router.post("/courses/rating", async (req, res) => {
     const { courseId, userId, rating } = req.body;
     
     try {
-      const updateRating = await CourseSubscription.findOneAndUpdate(
-        { courseId: new mongoose.Types.ObjectId(courseId), userId: new mongoose.Types.ObjectId(userId) },
-        { rating },
-        { new: true }
-      );
-      if (!updateRating) {
-        return res.status(404).json({ message: "Subscription not found" });
-      }
-  
-      res.status(200).json(updateRating);
+        // Cập nhật rating của người dùng cho khóa học
+        const updateRating = await CourseSubscription.findOneAndUpdate(
+            { courseId: new mongoose.Types.ObjectId(courseId), userId: new mongoose.Types.ObjectId(userId) },
+            { rating },
+            { new: true }
+        );
+
+        if (!updateRating) {
+            return res.status(404).json({ message: "Subscription not found" });
+        }
+
+        // Tính lại rating trung bình cho khóa học
+        const allRatings = await CourseSubscription.find({ courseId }).select("rating");
+        const totalRatings = allRatings.reduce((sum, sub) => sum + sub.rating, 0);
+        const averageRating = totalRatings / allRatings.length;
+
+        // Cập nhật `averageRating` vào bảng `Courses`
+        await Courses.findByIdAndUpdate(
+            courseId,
+            { averageRating },
+            { new: true }
+        );
+
+        res.status(200).json({
+            message: "Rating updated successfully",
+            averageRating,
+        });
     } catch (error) {
-      console.error("Error updating rating:", error);
-      res.status(500).json({ message: "Failed to update rating" });
+        console.error("Error updating rating:", error);
+        res.status(500).json({ message: "Failed to update rating" });
     }
-  });
+});
+
 
 export default router;

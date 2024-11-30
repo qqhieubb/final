@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import Layout from "../Utils/Layout";
 import { useNavigate } from "react-router-dom";
 import { CourseData } from "../../context/CourseContext";
+import { Pagination, Button } from "antd";
 import "./admincourses.css";
-import toast from "react-hot-toast";
 import axios from "axios";
 import { server } from "../../main";
-import { Pagination, Button } from "antd";
+import toast from "react-hot-toast";
 import uploadFileApi from "../../config/uploadFileApi";
 
 const AdminCourses = ({ user }) => {
@@ -16,7 +16,6 @@ const AdminCourses = ({ user }) => {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
-  const [createdBy] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user"))._id : "");
   const [duration, setDuration] = useState("");
   const [image, setImage] = useState("");
   const [imagePrev, setImagePrev] = useState("");
@@ -30,18 +29,7 @@ const AdminCourses = ({ user }) => {
 
   const { courses, fetchCourses } = CourseData();
 
-  // Điều hướng nếu user không có quyền
-  useEffect(() => {
-    console.log(user)
-    // if (user) navigate("/");
-  }, [user, navigate]);
-
-  // Lấy danh sách khóa học khi component được mount
-  useEffect(() => {
-    fetchCourses();
-  }, [fetchCourses]);
-
-  // Lấy danh sách Category từ API khi component được mount
+  // Lấy danh sách category
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -56,84 +44,96 @@ const AdminCourses = ({ user }) => {
     fetchCategories();
   }, []);
 
+  // Lấy danh sách khóa học của Instructor hiện tại
+  useEffect(() => {
+    if (user?.role === "Instructor") {
+      fetchCourses(user._id, user.role); // Lấy danh sách khóa học của user hiện tại
+    }
+  }, [fetchCourses, user]);
+
+  // Xử lý thay đổi hình ảnh
   const changeImageHandler = async (e) => {
     const file = e.target.files[0];
     try {
-        const downloadURL = await uploadFileApi.uploadFile(e);
-        setImagePrev(downloadURL);
-        setImage(downloadURL);
+      const downloadURL = await uploadFileApi.uploadFile(e);
+      setImagePrev(downloadURL);
+      setImage(downloadURL);
     } catch (error) {
-        console.error("Error uploading file:", error);
-        toast.error("Failed to upload image");
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload image");
     }
   };
 
+  // Chỉnh sửa khóa học
   const editHandler = (course) => {
     setTitle(course.title);
     setDescription(course.description);
     setCategory(course.category?._id || course.category);
     setPrice(course.price);
     setDuration(course.duration);
-    setImagePrev(course.image); // Assuming you have an image field
+    setImagePrev(course.image);
     setCurrentCourseId(course._id);
     setEditMode(true);
   };
 
+  // Gửi form thêm/sửa khóa học
   const submitHandler = useCallback(async (e) => {
     e.preventDefault();
     setBtnLoading(true);
 
     const courseData = {
-        title,
-        description,
-        category,
-        price,
-        createdBy,
-        duration,
-        userId: user._id,
-        image,
+      title,
+      description,
+      category,
+      price,
+      createdBy: user._id,
+      duration,
+      image,
     };
 
     try {
-        if (editMode) {
-            // Call update API
-            const { data } = await axios.put(`${server}/api/course/${currentCourseId}`, courseData, {
-                headers: {
-                    token: localStorage.getItem("token"),
-                    'Content-Type': 'application/json',
-                },
-            });
-            toast.success(data.message);
-        } else {
-            // Call create API
-            const { data } = await axios.post(`${server}/api/course/new`, courseData, {
-                headers: {
-                    token: localStorage.getItem("token"),
-                    'Content-Type': 'application/json',
-                },
-            });
-            toast.success(data.message);
-        }
-
-        await fetchCourses();
-        // Reset form
-        setTitle("");
-        setDescription("");
-        setPrice("");
-        setCreatedBy("");
-        setDuration("");
-        setImage("");
-        setImagePrev("");
-        setCategory("");
-        setEditMode(false);
-        setCurrentCourseId(null);
+      if (editMode) {
+        // Cập nhật khóa học
+        const { data } = await axios.put(`${server}/api/course/${currentCourseId}`, courseData, {
+          headers: {
+            token: localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+        });
+        toast.success(data.message);
+      } else {
+        // Thêm mới khóa học
+        const { data } = await axios.post(`${server}/api/course/new`, courseData, {
+          headers: {
+            token: localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+        });
+        toast.success(data.message);
+      }
+      await fetchCourses(user._id, user.role); // Làm mới danh sách khóa học
+      resetForm();
     } catch (error) {
-        console.log(error.response?.data?.message || "An error occurred");
+      toast.error(error.response?.data?.message || "An error occurred");
     } finally {
-        setBtnLoading(false);
+      setBtnLoading(false);
     }
-  }, [title, description, category, price, createdBy, duration, fetchCourses, editMode, currentCourseId, image]);
+  }, [title, description, category, price, user, duration, fetchCourses, editMode, currentCourseId, image]);
 
+  // Hàm đặt lại form
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setPrice("");
+    setDuration("");
+    setImage("");
+    setImagePrev("");
+    setCategory("");
+    setEditMode(false);
+    setCurrentCourseId(null);
+  };
+
+  // Xóa khóa học
   const deleteHandler = useCallback(async (courseId) => {
     try {
       await axios.delete(`${server}/api/course/${courseId}`, {
@@ -142,26 +142,21 @@ const AdminCourses = ({ user }) => {
         },
       });
       toast.success("Course deleted successfully");
-      await fetchCourses();
+      await fetchCourses(user._id, user.role);
     } catch (error) {
       toast.error("Failed to delete the course");
     }
-  }, [fetchCourses]);
+  }, [fetchCourses, user]);
 
-  // Lấy danh sách khóa học cho trang hiện tại
-  const currentCourses = user?.role === "Instructor" 
-    ? courses.filter(course => course?.createdBy?._id === createdBy).slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-      )
-    : courses.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-      );
-
+  // Xử lý phân trang
   const onPageChange = (page) => {
     setCurrentPage(page);
   };
+
+  // Lọc khóa học theo user hiện tại
+  const currentCourses = courses
+    .filter((course) => course.createdBy._id === user._id) // Lọc theo user hiện tại
+    .slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -169,7 +164,7 @@ const AdminCourses = ({ user }) => {
         <div className="left">
           <h1>All Courses</h1>
           <div className="dashboard-content">
-            {courses && courses.length > 0 ? (
+            {courses.length > 0 ? (
               <>
                 <table>
                   <thead>
@@ -191,11 +186,8 @@ const AdminCourses = ({ user }) => {
                         <td>{course.duration} hours</td>
                         <td>{course?.createdBy?.name}</td>
                         <td>
-                        {user && user.role === "Instructor" && (
                           <div className="actions-container">
-                            <Button className="edit-btn" onClick={() => editHandler(course)}>
-                              Edit
-                            </Button>
+                            <Button className="edit-btn" onClick={() => editHandler(course)}>Edit</Button>
                             <Button
                               className="delete-btn"
                               danger
@@ -215,9 +207,7 @@ const AdminCourses = ({ user }) => {
                               Manage
                             </Button>
                           </div>
-                        )}
-                      </td>
-
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,12 +225,11 @@ const AdminCourses = ({ user }) => {
             )}
           </div>
         </div>
-
         <div className="right">
           <div className="add-course">
             <div className="course-form">
               <h2>{editMode ? "Edit Course" : "Add Course"}</h2>
-              {user && user.role === "Instructor" && ( // Chỉ hiển thị form cho Instructor
+              {user?.role === "Instructor" && (
                 <form onSubmit={submitHandler}>
                   <label htmlFor="title">Title</label>
                   <input
@@ -294,7 +283,7 @@ const AdminCourses = ({ user }) => {
                   />
 
                   <label htmlFor="image">Image</label>
-                  <input type="file" id="image" required onChange={changeImageHandler} />
+                  <input type="file" id="image" onChange={changeImageHandler} />
                   {imagePrev && <img src={imagePrev} alt="Preview" width={300} />}
 
                   <button

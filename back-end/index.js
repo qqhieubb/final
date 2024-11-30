@@ -7,7 +7,7 @@ import courseRoutes from "./routes/courseRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import coursesSubcription from "./routes/courseSubscriptionRoutes.js";
-import instructorRoute from "./routes/teacherCoursesRoutes.js";
+
 import cors from "cors";
 
 dotenv.config();
@@ -40,7 +40,7 @@ app.use("/api", courseRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", categoryRoutes);
 app.use("/api", coursesSubcription);
-app.use("/api", instructorRoute);
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

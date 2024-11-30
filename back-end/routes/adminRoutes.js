@@ -25,23 +25,6 @@ router.delete("/lecture/:id", isAuth, isInstructor, deleteLecture);
 router.get("/stats", isAuth, isAdmin, getAllStats);
 router.put("/user/:id", isAuth, isAdmin, updateRole);
 router.get("/users", isAuth, isAdmin, getAllUser);
-
-
-router.post('/send_email', async (req, res) => {
-  const { to, subject } = req.body;
-
-  try {
-    // Send the email
-    const totalMoney = await dashboardService.totalRevenueTeacher(req, res)
-
-    await sendEmail(to, subject, totalMoney.totalRevenueCourseByTeacher * 0.1);
-    res.status(200).send({ message: 'Email sent successfully', totalMoney });
-  } catch (error) {
-    res.status(500).send({ message: 'Failed to send email', error: error.message });
-  }
-});
-
-
 router.get("/total_role", dashboardService.totalRole);
 router.get("/total_course_category", dashboardService.countCoursesByCategory);
 router.get("/total_revenue_teacher", dashboardService.totalRevenueByInstructor);

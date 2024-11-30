@@ -6,7 +6,7 @@ import { promisify } from "util";
 import fs from "fs";
 import { User } from "../models/User.js";
 import { Category } from "../models/Category.js"; 
-import { TeacherCourses } from "../models/TeacherCourses.js";
+
 
 export const createCourse = TryCatch(async (req, res) => {
   const { title, description, category, createdBy, duration, price, userId } = req.body;
@@ -31,10 +31,7 @@ export const createCourse = TryCatch(async (req, res) => {
     price,
   });
 
-    const newTeacherCourse = new TeacherCourses({
-      teacherId: userId,
-      courseId: newCourse._id
-    });
+    
     await newTeacherCourse.save();
 
   res.status(201).json({

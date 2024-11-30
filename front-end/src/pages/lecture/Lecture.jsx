@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { Card, Button, Modal, Input, Progress, Typography, List, message, Spin } from "antd";
+import { CheckOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { server } from "../../main";
-import { Card, Button, Modal, Input, Progress, Typography, Upload, List, message, Spin } from "antd";
-import { UploadOutlined, CheckOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-
 const { Title, Text } = Typography;
 
 const Lecture = ({ user }) => {
@@ -12,17 +11,18 @@ const Lecture = ({ user }) => {
   const [lecture, setLecture] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lecLoading, setLecLoading] = useState(false);
+  const [completed, setCompleted] = useState(0);
+  const [completedLec, setCompletedLec] = useState(0);
+  const [lectLength, setLectLength] = useState(0);
+  const [progress, setProgress] = useState([{ completedLectures: [] }]);
+  const [courseName, setCourseName] = useState("");
   const [show, setShow] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [video, setVideo] = useState("");
+  const [video, setVideo] = useState(null);
   const [videoPrev, setVideoPrev] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
-  const [completed, setCompleted] = useState("");
-  const [completedLec, setCompletedLec] = useState("");
-  const [lectLength, setLectLength] = useState("");
-  const [progress, setProgress] = useState([]);
-  const [courseName, setCourseName] = useState("");
+
   const params = useParams();
   const navigate = useNavigate();
 
@@ -45,7 +45,7 @@ const Lecture = ({ user }) => {
       });
       setCourseName(data.course.title);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       message.error("Failed to fetch course details");
     }
   }
@@ -58,7 +58,7 @@ const Lecture = ({ user }) => {
       setLectures(data.lectures);
       setLoading(false);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       message.error("Failed to fetch lectures");
       setLoading(false);
     }
@@ -67,21 +67,24 @@ const Lecture = ({ user }) => {
   async function fetchProgress() {
     try {
       const { data } = await axios.get(
-        // `${server}/api/user/progress?course=${params.id}`,
         `${server}/api/user/course_progress?course=${params.id}&userId=${user._id}`,
         {
-          headers: {
-            token: localStorage.getItem("token"),
-          },
+          headers: { token: localStorage.getItem("token") },
         }
       );
 
-      setCompleted(data.courseProgressPercentage);
-      setCompletedLec(data.completedLectures);
-      setLectLength(data.allLectures);
-      setProgress(data.progress);
+      setCompleted(data.courseProgressPercentage || 0);
+      setCompletedLec(data.completedLectures || 0);
+      setLectLength(data.allLectures || 0);
+
+      if (data.progress) {
+        setProgress([data.progress]);
+      } else {
+        setProgress([{ completedLectures: [] }]);
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      setProgress([{ completedLectures: [] }]);
     }
   }
 
@@ -91,15 +94,13 @@ const Lecture = ({ user }) => {
         `${server}/api/user/progress?course=${params.id}&lectureId=${id}`,
         {},
         {
-          headers: {
-            token: localStorage.getItem("token"),
-          },
+          headers: { token: localStorage.getItem("token") },
         }
       );
       message.success(data.message);
       fetchProgress();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       message.error("Failed to update progress");
     }
   };
@@ -113,7 +114,7 @@ const Lecture = ({ user }) => {
       setLecture(data.lecture);
       setLecLoading(false);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       message.error("Failed to fetch lecture details");
       setLecLoading(false);
     }
@@ -127,12 +128,11 @@ const Lecture = ({ user }) => {
     reader.readAsDataURL(file);
     reader.onloadend = () => setVideoPrev(reader.result);
   };
-  
 
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setVideo("");
+    setVideo(null);
     setVideoPrev("");
     setShow(false);
   };
@@ -142,32 +142,31 @@ const Lecture = ({ user }) => {
       message.error("Please select a video before submitting");
       return;
     }
-  
+
     setBtnLoading(true);
     const myForm = new FormData();
     myForm.append("title", title);
     myForm.append("description", description);
     myForm.append("file", video);
-  
+
     try {
       const { data } = await axios.post(`${server}/api/course/${params.id}`, myForm, {
         headers: { token: localStorage.getItem("token") },
       });
       message.success(data.message);
-      setBtnLoading(false);
       resetForm();
       fetchLectures();
     } catch (error) {
-      message.error(error.response?.data?.message || "Failed to add lecture");
+      message.error("Failed to add lecture");
+    } finally {
       setBtnLoading(false);
     }
   };
-  
 
   const deleteHandler = async (id) => {
     Modal.confirm({
       title: "Confirm Deletion",
-      content: `Are you sure you want to delete this lecture?`,
+      content: "Are you sure you want to delete this lecture?",
       onOk: async () => {
         try {
           const { data } = await axios.delete(`${server}/api/lecture/${id}`, {
@@ -176,7 +175,7 @@ const Lecture = ({ user }) => {
           message.success(data.message);
           fetchLectures();
         } catch (error) {
-          message.error(error.response?.data?.message || "Failed to delete lecture");
+          message.error("Failed to delete lecture");
         }
       },
     });
@@ -195,7 +194,9 @@ const Lecture = ({ user }) => {
           <Card style={{ textAlign: "center", marginBottom: "20px" }}>
             <Title level={4}>Course Progress</Title>
             <Progress percent={completed} />
-            <Text>{completedLec} out of {lectLength} Lectures Completed ({completed}%)</Text>
+            <Text>
+              {completedLec} out of {lectLength} Lectures Completed ({completed}%)
+            </Text>
           </Card>
 
           <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
@@ -204,8 +205,20 @@ const Lecture = ({ user }) => {
                 <Spin size="large" />
               ) : lecture.video ? (
                 <Card
-                  title={lecture.title}
-                  extra={<Button onClick={() => addProgress(lecture._id)}>Complete</Button>}
+                  title={<Title level={4} style={{ marginBottom: "10px" }}>{lecture.title}</Title>}
+                  extra={
+                    <Button
+                      onClick={() => addProgress(lecture._id)}
+                      disabled={progress[0]?.completedLectures?.includes(lecture._id)}
+                    >
+                      Complete
+                    </Button>
+                  }
+                  style={{
+                    border: "3px solid #000", // Viền đậm hơn
+                    borderRadius: "8px",
+                    padding: "15px",
+                  }}
                 >
                   <video
                     src={`${server}/${lecture.video}`}
@@ -220,6 +233,9 @@ const Lecture = ({ user }) => {
             </div>
 
             <div style={{ width: "400px", textAlign: "center" }}>
+              <Title level={4} style={{ marginBottom: "15px" }}>
+                Contents
+              </Title>
               {user?.role === "Instructor" && (
                 <Button
                   type="primary"
@@ -235,34 +251,45 @@ const Lecture = ({ user }) => {
               <List
                 bordered
                 dataSource={lectures}
-                renderItem={(item, index) => (
-                  <List.Item
-                    onClick={() => fetchLecture(item._id)}
-                    style={{
-                      cursor: "pointer",
-                      padding: "10px 15px",
-                      backgroundColor: lecture._id === item._id ? "#e6f7ff" : "#fff",
-                      borderRadius: "5px",
-                    }}
-                    actions={[
-                      progress[0]?.completedLectures?.includes(item._id) && (
-                        <CheckOutlined style={{ color: "green" }} />
-                      ),
-                      user?.role === "Instructor" && (
-                        <Button
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteHandler(item._id);
-                          }}
-                        />
-                      ),
-                    ]}
-                  >
-                    {index + 1}. {item.title}
-                  </List.Item>
-                )}
+                renderItem={(item, index) => {
+                  const isCompleted = progress[0]?.completedLectures?.includes(item._id);
+                  return (
+                    <List.Item
+                      onClick={() => fetchLecture(item._id)}
+                      style={{
+                        cursor: "pointer",
+                        padding: "10px 15px",
+                        marginBottom: "10px", // Tách bài giảng ra
+                        backgroundColor: isCompleted
+                          ? "#d4f4d2"
+                          : lecture._id === item._id
+                          ? "#e6f7ff"
+                          : "#fff",
+                        borderRadius: "5px",
+                        border: isCompleted
+                          ? "2px solid green"
+                          : lecture._id === item._id
+                          ? "2px solid #1890ff"
+                          : "1px solid #d9d9d9",
+                      }}
+                      actions={[
+                        isCompleted && <CheckOutlined style={{ color: "green" }} />,
+                        user?.role === "Instructor" && (
+                          <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHandler(item._id);
+                            }}
+                          />
+                        ),
+                      ]}
+                    >
+                      <strong>{index + 1}. {item.title}</strong>
+                    </List.Item>
+                  );
+                }}
               />
             </div>
           </div>

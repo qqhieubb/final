@@ -21,6 +21,8 @@ const schema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  averageRating: { type: Number, default: 0 },
+
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",

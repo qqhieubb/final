@@ -58,6 +58,7 @@ const AdminDashboard = ({ user }) => {
           <div style={{ textAlign: "center", color: "red" }}>{error}</div>
         ) : (
           <>
+            {/* Statistics Cards */}
             <Row gutter={16} style={{ marginBottom: "24px" }}>
               <Col span={8}>
                 <Card>
@@ -76,19 +77,27 @@ const AdminDashboard = ({ user }) => {
               </Col>
             </Row>
 
-            <Row gutter={16}>
+            {/* Pie Chart Section */}
+            <Row gutter={16} style={{ marginBottom: "24px" }}>
               <Col span={12}>
-                <Card title="User Roles Distribution">
+                <Card
+                  title="User Roles Distribution"
+                  bodyStyle={{ display: "flex", justifyContent: "center", alignItems: "center", height: "500px" }}
+                >
                   <UserRolePieChart />
                 </Card>
               </Col>
               <Col span={12}>
-                <Card title="Category Distribution">
+                <Card
+                  title="Category Distribution"
+                  bodyStyle={{ display: "flex", justifyContent: "center", alignItems: "center", height: "500px" }}
+                >
                   <CategoryPieChart />
                 </Card>
               </Col>
             </Row>
 
+            {/* Revenue Chart Section */}
             <Row gutter={16} style={{ marginTop: "24px" }}>
               <Col span={24}>
                 <Card title="Revenue by Instructor">
@@ -97,7 +106,7 @@ const AdminDashboard = ({ user }) => {
               </Col>
             </Row>
 
-            {/* Add a direct button for Instructor to manage courses */}
+            {/* Manage Courses Button */}
             {user && user.role === "Instructor" && (
               <div style={{ textAlign: "center", marginTop: "24px" }}>
                 <Button
